@@ -53,8 +53,9 @@ export default function Home({ socket, user, notice, clearNotice, onSignOut, onA
           </div>
           <div>
             <h3>Join a partner</h3>
-            <input className="code-input" value={code} maxLength={4} placeholder="CODE"
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))} />
+            <input className="code-input" value={code} placeholder="0000" aria-label="Cell code"
+              inputMode="numeric" pattern="[0-9]*" autoComplete="off"
+              onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} />
             <button className="btn" disabled={busy || code.length !== 4}
               onClick={() => { const p = profile(); if (p) go('room:join', { code, profile: p }) }}>Join</button>
           </div>

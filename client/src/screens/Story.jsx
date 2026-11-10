@@ -2,6 +2,7 @@
 // finishes the line, on both screens.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import SceneBackground from '../components/SceneBackground.jsx'
+import SaveQuit from '../components/SaveQuit.jsx'
 
 const CHAR_MS = 32
 const PAUSE_CHAR_MS = 450
@@ -31,7 +32,7 @@ function TypedLine({ line, revealed, onDone }) {
   )
 }
 
-export default function Story({ room, isHost, emit }) {
+export default function Story({ room, isHost, emit, spectator }) {
   const { story } = room
   const done = useRef(false)
   const [typed, setTyped] = useState(false)
@@ -67,6 +68,7 @@ export default function Story({ room, isHost, emit }) {
           Skip story (dev)
         </button>
       )}
+      {!spectator && <SaveQuit emit={emit} level={room.level} />}
     </div>
   )
 }

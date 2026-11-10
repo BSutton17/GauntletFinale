@@ -41,7 +41,7 @@ test('create, join, start from level 1, the prologue, the level card, then level
   const { m } = h
   const { code } = m.create(host, hp)
   m.attach(host.id, 's1')
-  m.join(guest, code.toLowerCase(), gp)
+  m.join(guest, ` ${code.slice(0, 2)}-${code.slice(2)} `, gp) // stray spaces/dashes are ignored
   m.attach(guest.id, 's2')
   assert.equal(h.last('B').players.A.name, 'Ash')
   assert.equal(h.last('B').you.isHost, false)
@@ -180,6 +180,38 @@ test('the same account in two browsers is two players (seats belong to sessions)
   h.runTimers()
   h.m.levelAction(s1.id, { type: 'guess', text: 'tile in the top right' })
   assert.deepEqual(h.progress.map(p => [p.userId, p.role]), [['acct', 'A'], ['acct', 'B']])
+})
+
+test('cell codes are 4-digit numbers', () => {
+  const h = harness()
+  const codes = new Set()
+  for (let i = 0; i < 200; i++) {
+    const { code } = h.m.create({ id: `u:${i}` }, hp)
+    assert.match(code, /^[1-9][0-9]{3}$/)
+    codes.add(code)
+  }
+  assert.equal(codes.size, 200, 'no two open cells share a code')
+  assert.throws(() => h.m.join(guest, 'ABCD', gp), /No cell/)
+})
+
+test('save and quit: either player saves the current level and the game ends for both', async () => {
+  for (const quitter of [host, guest]) {
+    const h = harness({ furthest: 11 })
+    const { code } = h.m.create(host, hp)
+    h.m.join(guest, code, gp)
+    await h.m.start(host.id, 4)
+    clickThroughStory(h, h.m)
+    h.runTimers()
+    assert.equal(h.last('A').phase, 'level')
+    h.progress.length = 0
+    assert.deepEqual(h.m.saveAndQuit(quitter.id), { level: 4 })
+    assert.deepEqual(h.progress.map(p => [p.userId, p.role, p.level]), [['u:host', 'A', 4], ['u:guest', 'B', 4]])
+    const closed = h.sent.filter(s => s.event === 'room:closed')
+    assert.deepEqual(closed.map(s => s.to).sort(), ['A', 'B'])
+    assert.match(closed[0].data.reason, quitter === host ? /^Ash saved and quit.*Level 4/ : /^Blair saved and quit.*Level 4/)
+    assert.equal(h.m.roomOf(host.id), null)
+    assert.equal(h.m.roomOf(guest.id), null)
+  }
 })
 
 test('bad names and pronouns are refused', () => {

@@ -24,7 +24,6 @@ import { cryptoRng } from '../levels/rng.js'
 
 export const CARD_MS = 6200 // long enough for the difficulty flames (they start at 2.5 s)
 const ABANDON_MS = 15 * 60 * 1000
-const CODE_LETTERS = 'BCDFGHJKLMNPQRSTVWXZ'
 
 export class GameError extends Error {}
 
@@ -33,10 +32,10 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
   const userRoom = new Map()    // userId -> code
 
   // ── helpers ──────────────────────────────────────────────────────────────
+  // A 4-digit number, 1000-9999 (no leading zero for anyone to drop).
   function newCode() {
     for (;;) {
-      let c = ''
-      for (let i = 0; i < 4; i++) c += CODE_LETTERS[Math.floor(Math.random() * CODE_LETTERS.length)]
+      const c = String(1000 + Math.floor(Math.random() * 9000))
       if (!rooms.has(c)) return c
     }
   }
@@ -230,7 +229,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
 
     join(user, codeRaw, profile) {
       const p = checkProfile(profile)
-      const code = String(codeRaw ?? '').toUpperCase().replace(/[^A-Z]/g, '')
+      const code = String(codeRaw ?? '').replace(/[^0-9]/g, '')
       const room = rooms.get(code)
       if (!room) throw new GameError('No cell with that code.')
       const existing = roleOf(room, user.id)
@@ -262,6 +261,20 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
           broadcast(room)
         }
       }
+    },
+
+    // "Save and quit" from inside a game: progress is saved at the level the room is on, and the game ends for
+    // both (neither can carry on alone). Either player can do it. Returns the level saved.
+    saveAndQuit(userId) {
+      const { room, role } = requireRoom(userId)
+      if (room.phase === 'lobby') { this.leave(userId); return { level: null } }
+      const atEnd = room.level === LEVEL_COUNT && (room.result || room.phase === 'choice' || room.phase === 'credits')
+      if (!atEnd) saveProgress(room, room.level, false)
+      const name = room.seats[role].name
+      closeRoom(room, atEnd
+        ? `${name} left the game.`
+        : `${name} saved and quit. Your progress is saved at Level ${room.level}.`)
+      return { level: atEnd ? null : room.level }
     },
 
     attach(userId, socketId) {

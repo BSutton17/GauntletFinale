@@ -5,6 +5,7 @@ import { LevelContext } from '../lib/levelContext.js'
 import { usePortraitTouch } from '../lib/useOrientation.js'
 import { levelComponent } from '../levels/index.js'
 import RotateOverlay from '../components/RotateOverlay.jsx'
+import SaveQuit from '../components/SaveQuit.jsx'
 
 function Pane({ room, role, view, emit, makeSubscribe, spectator, socket }) {
   const Component = levelComponent(room.level)
@@ -47,12 +48,13 @@ export default function LevelScreen({ room, emit, makeSubscribe, spectator, sock
   }
 
   return (
-    <div className="level-screen">
+    <div className="level-screen" data-level={room.level}>
       {needsLandscape && portrait && <RotateOverlay />}
       {room.dev && room.you.isHost && (
         <button className="btn small ghost dev-skip" onClick={() => emit('level:devSkip')}>Skip level (dev)</button>
       )}
       <Pane room={room} role={room.you.role} view={room.levelView} emit={emit} makeSubscribe={makeSubscribe} spectator={false} socket={socket} />
+      <SaveQuit emit={emit} level={room.level} />
     </div>
   )
 }

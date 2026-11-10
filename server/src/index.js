@@ -130,6 +130,7 @@ io.on('connection', (socket) => {
     socket.emit('room:none')
   })
 
+  on('room:saveQuit', () => rooms.saveAndQuit(player.id))
   on('room:start', ({ level } = {}) => rooms.start(player.id, level))
   on('room:lobby', () => rooms.returnToLobby(player.id))
   on('story:advance', (opts) => rooms.advanceStory(player.id, opts ?? {}))
