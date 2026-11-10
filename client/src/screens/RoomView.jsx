@@ -19,13 +19,13 @@ export default function RoomView({ socket, room, user, makeSubscribe, spectator 
       screen = <Lobby room={room} user={user} emit={emit} spectator={spectator} />
       break
     case 'story':
-      screen = <Story room={room} isHost={isHost} emit={emit} spectator={spectator} />
+      screen = <Story room={room} isHost={isHost} emit={emit} spectator={spectator} isAdmin={!spectator && !!user?.isAdmin} />
       break
     case 'card':
       screen = <LevelCard level={room.level} />
       break
     case 'level':
-      screen = <LevelScreen room={room} emit={emit} makeSubscribe={makeSubscribe} spectator={spectator} socket={socket} />
+      screen = <LevelScreen room={room} emit={emit} makeSubscribe={makeSubscribe} spectator={spectator} socket={socket} isAdmin={!spectator && !!user?.isAdmin} />
       break
     case 'choice':
       screen = <Choice room={room} emit={emit} spectator={spectator} />

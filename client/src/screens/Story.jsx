@@ -32,7 +32,7 @@ function TypedLine({ line, revealed, onDone }) {
   )
 }
 
-export default function Story({ room, isHost, emit, spectator }) {
+export default function Story({ room, isHost, emit, spectator, isAdmin = false }) {
   const { story } = room
   const done = useRef(false)
   const [typed, setTyped] = useState(false)
@@ -68,7 +68,7 @@ export default function Story({ room, isHost, emit, spectator }) {
           Skip story (dev)
         </button>
       )}
-      {!spectator && <SaveQuit emit={emit} level={room.level} />}
+      {!spectator && <SaveQuit emit={emit} level={room.level} canSwitch={isAdmin} swapped={!!room.swapped} />}
     </div>
   )
 }

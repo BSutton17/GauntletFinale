@@ -136,6 +136,10 @@ io.on('connection', (socket) => {
   })
 
   on('room:saveQuit', () => rooms.saveAndQuit(player.id))
+  on('room:switchSides', () => {
+    if (!admin) throw new GameError('Not allowed.')
+    return rooms.switchSides(player.id)
+  })
   on('room:start', ({ level } = {}) => rooms.start(player.id, level))
   on('room:lobby', () => rooms.returnToLobby(player.id))
   on('story:advance', (opts) => rooms.advanceStory(player.id, opts ?? {}))

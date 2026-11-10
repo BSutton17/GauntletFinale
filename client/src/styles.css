@@ -198,10 +198,13 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 @keyframes pulse { 50% { opacity: .35; } }
 .dev-skip { position: absolute; top: 12px; right: 12px; z-index: 5; }
 
-/* Save and quit: a small door in a corner. Kept off each level's own corner furniture (see data-level rules). */
-.save-quit {
-  position: absolute; z-index: 40;
+/* Corner tools: the Save & Quit door (everyone) and Switch sides (admin only). Kept off each level's own corner
+   furniture (see the data-level rules). */
+.corner-tools {
+  position: absolute; z-index: 40; display: flex; gap: 6px;
   top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left));
+}
+.corner-btn {
   display: inline-flex; align-items: center; gap: 6px;
   height: 32px; padding: 0 10px; border-radius: 16px;
   font: inherit; font-size: 13px; line-height: 1; white-space: nowrap;
@@ -210,18 +213,26 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
   opacity: .8; transition: opacity .15s, color .15s, border-color .15s;
 }
 /* Level 9: both top corners hold the inventories, so it sits in the HUD row just left of the timer. */
-.level-screen .save-quit[data-level="9"] { left: auto; right: calc(50% + 50px); top: max(4px, env(safe-area-inset-top)); }
+.level-screen .corner-tools[data-level="9"] { left: auto; right: calc(50% + 50px); top: max(4px, env(safe-area-inset-top)); }
 /* Level 11: "How to play" has the top-left corner; the top-right is free (the dev skip moves down). */
-.level-screen .save-quit[data-level="11"] { left: auto; right: max(8px, env(safe-area-inset-right)); }
+.level-screen .corner-tools[data-level="11"] { flex-direction: row-reverse; left: auto; right: max(8px, env(safe-area-inset-right)); }
 .level-screen[data-level="11"] .dev-skip { top: 50px; }
 /* Phones: just the door, so it fits beside every level's corner furniture. */
 @media (max-height: 500px), (max-width: 700px) {
-  .save-quit { width: 32px; padding: 0; justify-content: center; }
-  .save-quit span { display: none; }
+  .corner-btn { width: 32px; padding: 0; justify-content: center; }
+  .corner-btn span { display: none; }
 }
 /* Level 4 on a narrow phone: the lamp plates reach the left edge, so they start after the door. */
 @media (max-width: 700px) { .level-screen[data-level="4"] .l4-lamps { padding-left: 36px; } }
-.save-quit:hover, .save-quit:focus-visible { opacity: 1; color: var(--text); border-color: var(--gold); }
+/* ...and the admin's extra Switch button needs room on any phone */
+@media (max-height: 500px), (max-width: 700px) {
+  .level-screen[data-level="4"]:has(.switch-sides) .l4-lamps { padding-left: 74px; }
+}
+.corner-btn:hover, .corner-btn:focus-visible { opacity: 1; color: var(--text); border-color: var(--gold); }
+/* Admin only, so just the arrows (with a tooltip): keeps the door where everyone else has it. */
+.switch-sides { width: 32px; padding: 0; justify-content: center; }
+.switch-sides span { display: none; }
+.switch-sides.on { opacity: 1; color: var(--gold); border-color: var(--gold); }
 .save-quit-backdrop {
   position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
   padding: 16px; background: rgba(0, 0, 0, .6); cursor: default;
@@ -339,7 +350,7 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
   animation-name: fadeIn; animation-timing-function: ease; animation-fill-mode: both;
 }
 .scene-bg-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(8,6,5,.45), rgba(8,6,5,.82)); }
-.story-screen > :not(.scene-bg, .save-quit, .save-quit-backdrop) { position: relative; z-index: 1; }
+.story-screen > :not(.scene-bg, .corner-tools, .save-quit-backdrop) { position: relative; z-index: 1; }
 .story-screen .dev-skip { position: absolute; }
 .story-screen .story-hint { position: absolute; }
 

@@ -194,6 +194,45 @@ test('cell codes are 4-digit numbers', () => {
   assert.throws(() => h.m.join(guest, 'ABCD', gp), /No cell/)
 })
 
+test('switch sides: the players swap puzzle sides mid-level; seats, host and progress stay put', async () => {
+  const h = harness({ furthest: 11 })
+  const { code } = h.m.create(host, hp)
+  h.m.join(guest, code, gp)
+  assert.throws(() => h.m.switchSides(host.id), /during the game/, 'not in the lobby')
+  await h.m.start(host.id, 1)
+  clickThroughStory(h, h.m)
+  h.runTimers()
+  assert.ok(h.last('A').levelView.letters, 'before: the host has the letters side')
+  assert.deepEqual(h.m.switchSides(host.id), { swapped: true })
+  const a = h.last('A'), b = h.last('B')
+  assert.ok(a.levelView.shifts && !a.levelView.letters, 'the host now sees the other side')
+  assert.ok(b.levelView.letters, 'the guest now has the letters side')
+  assert.equal(a.you.isHost, true)
+  assert.equal(a.you.levelRole, 'B')
+  assert.equal(b.you.levelRole, 'A')
+  assert.equal(a.levelPlayers.A.name, 'Blair', 'names follow the sides')
+  // Only the letters side can answer: that's the guest now.
+  h.m.levelAction(host.id, { type: 'guess', text: 'tile in the top right' })
+  assert.equal(h.last('A').phase, 'level', "the host's guess is ignored")
+  h.progress.length = 0
+  h.m.levelAction(guest.id, { type: 'guess', text: 'tile in the top right' })
+  assert.equal(h.last('A').phase, 'story')
+  assert.deepEqual(h.progress.map(p => [p.userId, p.role]), [['u:host', 'A'], ['u:guest', 'B']], 'progress by seat, as always')
+  assert.deepEqual(h.m.switchSides(guest.id), { swapped: false }, 'switching again switches back')
+})
+
+test('switch sides: the poker winner is the player who won, whichever side they played', async () => {
+  const h = harness({ furthest: 11, devMode: true })
+  const { code } = h.m.create(host, hp)
+  h.m.join(guest, code, gp)
+  await h.m.start(host.id, 11)
+  clickThroughStory(h, h.m)
+  h.runTimers()
+  h.m.switchSides(host.id)
+  h.m.devSkipLevel(host.id) // dev skip = the host wins
+  assert.equal(h.last('A').result.winner, 'A')
+})
+
 test('save and quit: either player saves the current level and the game ends for both', async () => {
   for (const quitter of [host, guest]) {
     const h = harness({ furthest: 11 })

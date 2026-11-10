@@ -49,6 +49,12 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
 
   const roleOf = (room, userId) => (room.seats.A?.userId === userId ? 'A' : room.seats.B?.userId === userId ? 'B' : null)
 
+  // "Switch sides" (admin only): the two players swap which side of the PUZZLE they play. Seats don't move, so the
+  // host is still the host and progress is saved as before. The map is its own inverse: seat -> level role and
+  // level role -> seat are the same function.
+  const other = (r) => (r === 'A' ? 'B' : 'A')
+  const sideOf = (room, role) => (room.swapped ? other(role) : role)
+
   function cast(room) {
     const c = {
       A: { name: room.seats.A.name, pronouns: room.seats.A.pronouns },
@@ -83,7 +89,10 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         ? { id: String(room.story.id), index: room.story.index, total: room.story.lines.length, line: room.story.lines[room.story.index], revealed: room.story.revealed }
         : null,
       result: room.result ? { winner: room.result.winner, choice: room.choice ?? null } : null,
+      swapped: !!room.swapped,
     }
+    // Who is on which side of the puzzle (the same as players unless the sides are switched).
+    base.levelPlayers = room.swapped ? { A: base.players.B, B: base.players.A } : base.players
     const names = { A: { name: room.seats.A.name }, B: { name: room.seats.B?.name ?? '' } }
     if (room.phase === 'choice') base.choice = choiceView(names, room.result.winner)
     if (room.phase === 'credits') base.credits = { roles: CREDIT_ROLES, ...finalCard(names, room.result.winner, room.choice) }
@@ -94,8 +103,8 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         base.levelViews = { A: room.levelModule.view(room.levelState, 'A', levelOpts), B: room.levelModule.view(room.levelState, 'B', levelOpts) }
       }
     } else {
-      base.you = { role: who, isHost: who === 'A' }
-      if (room.phase === 'level' && room.levelModule) base.levelView = room.levelModule.view(room.levelState, who, levelOpts)
+      base.you = { role: who, isHost: who === 'A', levelRole: sideOf(room, who) }
+      if (room.phase === 'level' && room.levelModule) base.levelView = room.levelModule.view(room.levelState, sideOf(room, who), levelOpts)
     }
     return base
   }
@@ -150,7 +159,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
       update: () => { if (live()) broadcast(room) },
       emit: (role, event, data) => {
         if (!live()) return
-        transport.toSeat(room.code, role, 'level:stream', { event, data })
+        transport.toSeat(room.code, sideOf(room, role), 'level:stream', { event, data })
         if (transport.hasWatchers(room.code)) transport.toWatchers(room.code, 'level:stream', { role, event, data })
       },
       complete: (result = {}) => { if (live()) completeLevel(room, result) },
@@ -161,7 +170,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
     const finished = room.level
     disposeLevel(room)
     if (finished === LEVEL_COUNT) {
-      room.result = { winner: result.winner === 'B' ? 'B' : 'A' }
+      room.result = { winner: sideOf(room, result.winner === 'B' ? 'B' : 'A') } // the winning side -> that player's seat
       beginStory(room, 'ending')
     } else {
       room.level = finished + 1
@@ -221,6 +230,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         story: null,
         result: null,
         choice: null,
+        swapped: false,
       }
       rooms.set(code, room)
       userRoom.set(user.id, code)
@@ -342,21 +352,31 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
       if (!devMode) return
       const { room, role } = requireRoom(userId)
       if (role !== 'A' || room.phase !== 'level') return
-      completeLevel(room, { winner: 'A' })
+      completeLevel(room, { winner: sideOf(room, 'A') })
     },
 
     // Whatever the level's action returns goes back to that player (e.g. { placed: true }).
     levelAction(userId, msg) {
       const { room, role } = requireRoom(userId)
       if (room.phase !== 'level' || !room.levelModule) return
-      return room.levelModule.action(room.levelState, role, msg, levelApi(room)) ?? undefined
+      return room.levelModule.action(room.levelState, sideOf(room, role), msg, levelApi(room)) ?? undefined
     },
 
     // Read-only data a level hands out on request (Level 3's piece pictures), for one role.
     levelQuery(userId, msg) {
       const { room, role } = requireRoom(userId)
       if (room.phase !== 'level' || !room.levelModule?.query) return {}
-      return room.levelModule.query(room.levelState, role, msg)
+      return room.levelModule.query(room.levelState, sideOf(room, role), msg)
+    },
+
+    // Admin only (the socket layer checks): swap sides with your partner. Works mid-puzzle; the puzzle carries on
+    // with each player now looking at the other's side. Stays switched until switched back or the next lobby.
+    switchSides(userId) {
+      const { room } = requireRoom(userId)
+      if (room.phase === 'lobby' || room.phase === 'credits') throw new GameError('Sides can only be switched during the game.')
+      room.swapped = !room.swapped
+      broadcast(room)
+      return { swapped: room.swapped }
     },
 
     // The same, for a silent admin spectator looking at either role.
@@ -381,7 +401,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
       if (role !== 'A') return
       clearTimers(room)
       disposeLevel(room)
-      Object.assign(room, { phase: 'lobby', story: null, result: null, choice: null, level: 1 })
+      Object.assign(room, { phase: 'lobby', story: null, result: null, choice: null, level: 1, swapped: false })
       broadcast(room)
     },
 
