@@ -6,8 +6,8 @@
 //   3 keys, chained: key 1 lies in the open, key 2 behind gate 1, key 3 behind gate 2.
 // So a side is: key 1 -> gate 1 (item + key 2) -> gate 2 (item + key 3) -> gate 3 (item) -> the meeting square.
 //
-// The timer is set by BOTS walking each player's actual route with human delays (see estimateSeconds), rounded
-// up to 15 seconds.
+// The timer is a fixed 6:30. BOTS walk each player's actual route with human delays (see estimateSeconds) and
+// any maze they can't finish in time is rejected.
 
 export const W = 50
 export const H = 50
@@ -51,17 +51,22 @@ export function estimateSeconds(walls, pathA, pathB, eventsA, eventsB) {
   return Math.max(ta, tb) + BOT.overlap * Math.min(ta, tb)
 }
 
-export const timerFor = (seconds) => Math.min(480, Math.max(120, Math.ceil((seconds * BOT.margin) / 15) * 15))
+// The user set the clock: 6:30 for every maze. A maze the bots can't finish in that time (with their margin)
+// is thrown away and another is made.
+export const TIMER_SEC = 390
+const fitsTimer = (seconds) => seconds * BOT.margin <= TIMER_SEC
 
-// How long each player's route should be (in squares). The bots turn this into time: ~100 squares is about the
-// 3 minutes the user suggested. (The first try, ~190 squares, came out at ~6 minutes.)
-const ROUTE_TARGET = 100
-const SUB_MIN = 10, SUB_MAX = 60   // size of each gated area
-const NEAR_MAIN = 9               // gated areas branch off fairly close to the main path
-const ITEM_SPREAD = 14            // the user asked for the items to be spread out: at least this far apart (squares, as the crow flies)
-const KEY1_MIN_DEPTH = 10
-const KEY1_MAX_DEPTH = 30
-const MAIN_MAX = 70                // corner to middle, in squares (median for a random maze is ~83)
+// Knobs for laying out each half (exported so tests and tuning scripts can read them).
+export const TUNE = {
+  // How long each player's route should be, in squares. The bots turn this into time.
+  ROUTE_TARGET: 120,
+  SUB_MIN: 10, SUB_MAX: 60,     // size of each gated area
+  NEAR_MAIN: 20,                // gated areas branch off within this many squares of the main path (9 bunched them up)
+  ITEM_SPREAD: 22,              // the user asked twice for the items to be spread out: at least this far apart (squares, as the crow flies; was 14)
+  KEY1_MIN_DEPTH: 10,
+  KEY1_MAX_DEPTH: 30,
+  MAIN_MAX: 70,                 // corner to middle, in squares (median for a random maze is ~83)
+}
 
 const openCount = (w) => (w & 1) + ((w >> 1) & 1) + ((w >> 2) & 1) + ((w >> 3) & 1)
 
@@ -137,7 +142,7 @@ function furnish(rng, walls, start, target) {
   const T = tree(walls, start)
   const main = new Set(pathBetween(T, start, target))
   const distToMain = (v) => { let n = 0; while (!main.has(v)) { v = T.parent.get(v); n++ } return n }
-  const candidates = T.order.filter(v => !main.has(v) && T.size.get(v) >= SUB_MIN && T.size.get(v) <= SUB_MAX && distToMain(v) <= NEAR_MAIN)
+  const candidates = T.order.filter(v => !main.has(v) && T.size.get(v) >= TUNE.SUB_MIN && T.size.get(v) <= TUNE.SUB_MAX && distToMain(v) <= TUNE.NEAR_MAIN)
   if (candidates.length < 3) return null
 
   let best = null
@@ -157,10 +162,10 @@ function furnish(rng, walls, start, target) {
     }
     const items = gates.map(g => rng.pick(deep(g)))
     const apart = (a, b) => { const x = rc(a), y = rc(b); return Math.abs(x.r - y.r) + Math.abs(x.c - y.c) }
-    if (apart(items[0], items[1]) < ITEM_SPREAD || apart(items[0], items[2]) < ITEM_SPREAD || apart(items[1], items[2]) < ITEM_SPREAD) continue
+    if (apart(items[0], items[1]) < TUNE.ITEM_SPREAD || apart(items[0], items[2]) < TUNE.ITEM_SPREAD || apart(items[1], items[2]) < TUNE.ITEM_SPREAD) continue
     const key2 = rng.pick(cellsIn(gates[0]).filter(v => v !== items[0]))
     const key3 = rng.pick(cellsIn(gates[1]).filter(v => v !== items[1]))
-    const open = T.order.filter(v => v !== start && v !== target && !gates.some(g => inside(T, v, g)) && T.depth.get(v) >= KEY1_MIN_DEPTH && T.depth.get(v) <= KEY1_MAX_DEPTH)
+    const open = T.order.filter(v => v !== start && v !== target && !gates.some(g => inside(T, v, g)) && T.depth.get(v) >= TUNE.KEY1_MIN_DEPTH && T.depth.get(v) <= TUNE.KEY1_MAX_DEPTH)
     if (!open.length || key2 === undefined || key3 === undefined) continue
     const key1 = rng.pick(open)
 
@@ -174,7 +179,7 @@ function furnish(rng, walls, start, target) {
       join(start, key1, key2, items[0], key3, items[1], items[2], target),
     ]
     const route = routes.reduce((a, b) => (b.length < a.length ? b : a))
-    const score = Math.abs(route.length - ROUTE_TARGET)
+    const score = Math.abs(route.length - TUNE.ROUTE_TARGET)
     if (!best || score < best.score) best = { score, gates, items, keys: [key1, key2, key3], route }
   }
   return best
@@ -198,8 +203,8 @@ export function generateMaze(rng) {
     carveHalf(rng, walls, 0, HALF - 1)
     carveHalf(rng, walls, HALF, H - 1)
     // Keep only mazes where both corner-to-middle walks are fairly direct (the bots' timer depends on it).
-    if (walkLength(walls, idx(START.A.r, START.A.c), MID_I) > MAIN_MAX) continue
-    if (walkLength(walls, idx(START.B.r, START.B.c), ENTRY_I) > MAIN_MAX) continue
+    if (walkLength(walls, idx(START.A.r, START.A.c), MID_I) > TUNE.MAIN_MAX) continue
+    if (walkLength(walls, idx(START.B.r, START.B.c), ENTRY_I) > TUNE.MAIN_MAX) continue
     const a = furnish(rng, walls, idx(START.A.r, START.A.c), MID_I)
     const b = furnish(rng, walls, idx(START.B.r, START.B.c), ENTRY_I)
     if (!a || !b) continue
@@ -218,7 +223,8 @@ export function generateMaze(rng) {
     }
     const events = { pickups: 6, gates: 3 }
     const seconds = estimateSeconds(walls, a.route, routeB, events, events)
-    return { walls, things, routes: { A: a.route, B: routeB }, botSeconds: Math.round(seconds), timerSec: timerFor(seconds) }
+    if (!fitsTimer(seconds)) continue
+    return { walls, things, routes: { A: a.route, B: routeB }, botSeconds: Math.round(seconds), timerSec: TIMER_SEC }
   }
   throw new Error('could not build the maze')
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { generateMaze, W, HALF, MID_I, ENTRY_I, DIRS, idx, rc } from '../src/levels/level9/maze.js'
+import { generateMaze, W, HALF, MID_I, ENTRY_I, DIRS, idx, rc, BOT, TUNE } from '../src/levels/level9/maze.js'
 import level9 from '../src/levels/level9/index.js'
 import { seededRng } from '../src/levels/rng.js'
 
@@ -45,12 +45,22 @@ test('every maze is completable: bots walk both planned routes through the real 
   }
 })
 
-test('timers come from the bots, on 15-second steps, in a sensible range', () => {
+test('the timer is always 6:30, and the bots can finish every maze inside it', () => {
   for (let seed = 1; seed <= 25; seed++) {
     const m = generateMaze(seededRng(seed))
-    assert.equal(m.timerSec % 15, 0)
-    assert.ok(m.timerSec >= 120 && m.timerSec <= 480, `${m.timerSec}`)
-    assert.ok(m.timerSec >= m.botSeconds, 'the timer gives at least the bots\' time')
+    assert.equal(m.timerSec, 390)
+    assert.ok(m.botSeconds * BOT.margin <= 390, `seed ${seed}: bots need ${m.botSeconds}s`)
+  }
+})
+
+test('the three items on each side are spread out', () => {
+  for (let seed = 1; seed <= 25; seed++) {
+    const m = generateMaze(seededRng(seed))
+    for (const side of ['A', 'B']) {
+      const it = [...m.things].filter(([, t]) => t.kind === 'item' && t.side === side).map(([i]) => rc(i))
+      const d = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.c - b.c)
+      assert.ok(Math.min(d(it[0], it[1]), d(it[0], it[2]), d(it[1], it[2])) >= TUNE.ITEM_SPREAD, `seed ${seed} ${side}`)
+    }
   }
 })
 
