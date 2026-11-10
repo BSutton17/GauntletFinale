@@ -501,7 +501,7 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
   border: 3px solid #6b5434; background: #6b5434; gap: 1px; box-shadow: 0 4px 14px rgba(0,0,0,.35);
 }
 .l7-grid span { background: #fdfaf3; display: flex; align-items: center; justify-content: center; min-width: 0; }
-.l7-grid.numbers span { font-family: ui-monospace, monospace; font-size: calc(max(250px, var(--g)) / 25 * .58); line-height: 1; color: #3a2b17; }
+.l7-grid.numbers span { font-family: ui-monospace, monospace; font-size: calc(max(250px, var(--g)) / var(--n) * .58); line-height: 1; color: #3a2b17; }
 .l7-grid.canvas { touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
 .l7-key { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-family: ui-monospace, monospace; font-size: 1.15em; color: #3a2b17; }
 .l7-key li { display: flex; align-items: center; gap: 8px; }

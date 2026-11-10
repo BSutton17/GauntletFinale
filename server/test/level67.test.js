@@ -28,9 +28,9 @@ test('L6: the sentence is accepted however it is typed; only Player 2 answers', 
   level6.dispose(s)
 })
 
-test('L7: the picture is a 25 x 25 cat in six colours, symmetrical, with a light background', () => {
-  assert.equal(PICTURE.length, 25)
-  assert.ok(PICTURE.every(r => r.length === 25 && r === [...r].reverse().join('')))
+test('L7: the picture is a 20 x 20 cat in six colours, symmetrical, with a light background', () => {
+  assert.equal(PICTURE.length, 20)
+  assert.ok(PICTURE.every(r => r.length === 20 && r === [...r].reverse().join('')))
   const used = new Set(PICTURE.join(''))
   assert.deepEqual([...used].sort(), COLOURS.map(c => c.ch).sort())
 })
@@ -38,7 +38,7 @@ test('L7: the picture is a 25 x 25 cat in six colours, symmetrical, with a light
 test("L7: Player 1 gets the numbers and a colour key; Player 2 gets a blank grid and colours, never the numbers", () => {
   const s = level7.create({ rng: seededRng(1) })
   const a = level7.view(s, 'A'), b = level7.view(s, 'B')
-  assert.equal(a.grid.length, 625)
+  assert.equal(a.grid.length, 400)
   assert.ok(a.grid.every(n => n >= 1 && n <= 6))
   assert.deepEqual(a.key.map(k => k.n), [1, 2, 3, 4, 5, 6])
   assert.ok(a.key.every(k => /^#[0-9a-f]{6}$/.test(k.hex)), 'colours, not colour names')
@@ -64,7 +64,7 @@ test('L7: only Player 2 paints; "cat" and "a cat" only count once the painting i
   assert.equal(s.wrong, 0)
   // bad paint is ignored
   level7.action(s, 'B', { type: 'paint', colour: 99, cells: [0] }, ap)
-  level7.action(s, 'B', { type: 'paint', colour: 1, cells: [-1, 625, 'x'] }, ap)
+  level7.action(s, 'B', { type: 'paint', colour: 1, cells: [-1, 400, 'x'] }, ap)
   assert.ok(s.painted.every(x => x === -1))
   // paint everything that isn't background (blank squares count as background)
   for (let id = 1; id < COLOURS.length; id++) {

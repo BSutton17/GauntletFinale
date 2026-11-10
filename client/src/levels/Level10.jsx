@@ -226,7 +226,7 @@ function Rider({ view }) {
           ))}
         </div>
       )}
-      <p className="l10-hint">{spectator ? 'Spectating the rider' : 'W / ↑ faster · S / ↓ brake · A D / ← → steer. The road is icy.'}</p>
+      <p className="l10-hint">{spectator ? 'Spectating the rider' : 'W / ↑ faster · S / ↓ brake · A D / ← → steer.'}</p>
       {!spectator && (
         <>
           <div className="l10-pad left">{pad('up', FaArrowUp)}{pad('down', FaArrowDown)}</div>

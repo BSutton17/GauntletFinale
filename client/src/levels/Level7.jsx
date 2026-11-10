@@ -1,7 +1,7 @@
 // Level 7: paint by numbers.
 //   Player 1: the grid of numbers and the key (each number is a coloured circle, no colour names).
 //   Player 2: a blank grid and the same colours. Pick a colour, then tap or drag across squares to paint.
-// Player 2 says what the picture is once it's painted.
+// Player 2 says what the picture is once it's painted. (The grid size comes from the server: 20 x 20.)
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FaEraser } from 'react-icons/fa'
 import { useLevel } from '../lib/levelContext.js'

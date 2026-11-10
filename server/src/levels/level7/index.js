@@ -1,41 +1,36 @@
 // Level 7: paint by numbers.
-//   Player 1 has a 25 x 25 grid of numbers and a key: each number is a coloured circle (no colour names).
-//   Player 2 has a blank 25 x 25 grid and a palette of the same colours (no numbers). They pick a colour and paint.
+//   Player 1 has a 20 x 20 grid of numbers and a key: each number is a coloured circle (no colour names).
+//   Player 2 has a blank 20 x 20 grid and a palette of the same colours (no numbers). They pick a colour and paint.
 //   Player 1 reads the numbers out as colours; Player 2 paints; the picture is a cat. Player 2 says what it is.
 // The answer only counts once the painting is (nearly) right, so guessing "cat" up front gets nowhere.
 // Which number means which colour is shuffled every game.
 //
 // ⚠️ Player 2's browser never gets the numbers: only their own painting.
 
-// The picture, by colour letter. Drawn as the left half (columns 0-12) and mirrored.
+// The picture, by colour letter (20 x 20). Drawn as the left half (columns 0-9) and mirrored.
 const LEFT = [
-  '.............',
-  '...K.........',
-  '...KK........',
-  '...KOK.......',
-  '...KPOK......',
-  '...KPPOK.....',
-  '...KPPOOKKKKK',
-  '...KOOOOOOOOO',
-  '..KOOOOOOOOOO',
-  '..KOOOOOOOOOO',
-  '..KOOKKKOOOOO',
-  '..KOKGKGKOOOO',
-  '..KOKGKGKOOOO',
-  '..KOKGKGKOOOO',
-  '..KOOKKKOOOOO',
-  'KKKOOOOOWWWPP',
-  '..KOOOOOWWWWP',
-  'KKKOOOOOWWWWK',
-  '..KOOOOOWWKKW',
-  '..KOOOOOOWWWW',
-  '...KOOOOOOOOO',
-  '....KKOOOOOOO',
-  '......KKKKKKK',
-  '.............',
-  '.............',
+  '..........',
+  '..K.......',
+  '..KK......',
+  '..KPK.....',
+  '..KPPK....',
+  '..KPOOKKKK',
+  '.KOOOOOOOO',
+  '.KOOOOOOOO',
+  '.KOOKKKOOO',
+  '.KOKGKGKOO',
+  '.KOKGKGKOO',
+  '.KOOKKKOOO',
+  'KKOOOOOWWP',
+  '.KOOOOWWWK',
+  'KKOOOOWKKW',
+  '.KOOOOOWWW',
+  '..KOOOOOOO',
+  '...KKOOOOO',
+  '.....KKKKK',
+  '..........',
 ]
-export const SIZE = 25
+export const SIZE = 20
 // The colours, in a fixed order: Player 2 paints with these ids. The first is the background, and an unpainted
 // square counts as background.
 export const COLOURS = [
@@ -50,7 +45,7 @@ const BLANK = -1
 // The painting counts as finished once this share of the squares is right.
 export const FINISHED_SHARE = 0.9
 
-export const PICTURE = LEFT.map(l => l + [...l.slice(0, -1)].reverse().join('')) // 25 strings of 25
+export const PICTURE = LEFT.map(l => l + [...l].reverse().join('')) // 20 strings of 20
 const TARGET = PICTURE.join('').split('').map(ch => COLOURS.findIndex(c => c.ch === ch)) // colour id per square
 
 const ACCEPT = new Set(['cat', 'kitty', 'kitten', 'kittycat', 'kitteh', 'feline', 'cats', 'pussycat', 'housecat', 'tabby', 'gingercat', 'orangecat'])
