@@ -210,9 +210,9 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
   opacity: .8; transition: opacity .15s, color .15s, border-color .15s;
 }
 /* Level 9: both top corners hold the inventories, so it sits in the HUD row just left of the timer. */
-.save-quit[data-level="9"] { left: auto; right: calc(50% + 50px); top: max(4px, env(safe-area-inset-top)); }
+.level-screen .save-quit[data-level="9"] { left: auto; right: calc(50% + 50px); top: max(4px, env(safe-area-inset-top)); }
 /* Level 11: "How to play" has the top-left corner; the top-right is free (the dev skip moves down). */
-.save-quit[data-level="11"] { left: auto; right: max(8px, env(safe-area-inset-right)); }
+.level-screen .save-quit[data-level="11"] { left: auto; right: max(8px, env(safe-area-inset-right)); }
 .level-screen[data-level="11"] .dev-skip { top: 50px; }
 /* Phones: just the door, so it fits beside every level's corner furniture. */
 @media (max-height: 500px), (max-width: 700px) {
@@ -339,7 +339,7 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
   animation-name: fadeIn; animation-timing-function: ease; animation-fill-mode: both;
 }
 .scene-bg-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(8,6,5,.45), rgba(8,6,5,.82)); }
-.story-screen > :not(.scene-bg):not(.save-quit):not(.save-quit-backdrop) { position: relative; z-index: 1; }
+.story-screen > :not(.scene-bg, .save-quit, .save-quit-backdrop) { position: relative; z-index: 1; }
 .story-screen .dev-skip { position: absolute; }
 .story-screen .story-hint { position: absolute; }
 

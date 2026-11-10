@@ -3,7 +3,8 @@ import { LEVEL_COUNT } from '@shared/levels.js'
 
 export default function Lobby({ room, user, emit, spectator }) {
   const isHost = room.you?.isHost
-  const unlocked = room.dev ? LEVEL_COUNT : Math.min(LEVEL_COUNT, user?.progress?.host?.furthest ?? 1)
+  const allUnlocked = room.dev || user?.isAdmin // the server checks this too
+  const unlocked = allUnlocked ? LEVEL_COUNT : Math.min(LEVEL_COUNT, user?.progress?.host?.furthest ?? 1)
   const [level, setLevel] = useState(unlocked)
   const [error, setError] = useState(null)
   useEffect(() => setLevel(unlocked), [unlocked])
@@ -40,6 +41,7 @@ export default function Lobby({ room, user, emit, spectator }) {
             </select>
           </label>
           {room.dev && <p className="faint small">Dev mode: every level is unlocked.</p>}
+          {!room.dev && user?.isAdmin && <p className="faint small">Admin: every level is unlocked.</p>}
           <button className="btn" disabled={!room.players.B} onClick={start}>Begin</button>
           {error && <p className="error">{error}</p>}
         </div>

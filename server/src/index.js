@@ -8,7 +8,7 @@ import { config } from './config.js'
 import { initStore, getStore } from './db/store.js'
 import { createAuthRouter, userFromToken, isAdmin, publicUser } from './auth/routes.js'
 import { createRoomManager, GameError } from './rooms/roomManager.js'
-import { PRONOUN_OPTIONS, cleanName } from '../../shared/levels.js'
+import { PRONOUN_OPTIONS, cleanName, LEVEL_COUNT } from '../../shared/levels.js'
 
 await initStore()
 
@@ -33,7 +33,12 @@ const rooms = createRoomManager({
     hasWatchers: (code) => (io.sockets.adapter.rooms.get(watchChannel(code))?.size ?? 0) > 0,
   },
   recordProgress: (userId, entry) => getStore().recordProgress(userId, entry),
-  getHostFurthest: async (userId) => (await getStore().getUser(userId))?.progress?.host?.furthest ?? 1,
+  // The admin account (verified Google email, see isAdmin) has every level from the start; everyone else
+  // unlocks them by playing.
+  getHostFurthest: async (userId) => {
+    const u = await getStore().getUser(userId)
+    return isAdmin(u) ? LEVEL_COUNT : u?.progress?.host?.furthest ?? 1
+  },
 })
 setInterval(() => rooms.sweep(), 60 * 1000).unref()
 
