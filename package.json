@@ -1,0 +1,24 @@
+{
+  "name": "gauntlet-finale-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "The Gauntlet Finale: game server (Express + Socket.io). The client lives in client/ and deploys to Netlify.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "node --watch server/src/index.js",
+    "test": "node --test \"server/test/*.test.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "google-auth-library": "^10.5.0",
+    "mongodb": "^6.20.0",
+    "sharp": "^0.34.3",
+    "socket.io": "^4.8.1"
+  }
+}

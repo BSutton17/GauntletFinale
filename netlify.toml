@@ -1,0 +1,8 @@
+# Netlify builds only the client. The repo root is checked out, so client/ can import ../shared.
+[build]
+  base = "client"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
