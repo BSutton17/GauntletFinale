@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { roads, botRun, selfClear, WIDTH, ROAD_METRES, LIMIT_SEC } from '../src/levels/level10/roads.js'
-import level10, { LANTERN } from '../src/levels/level10/index.js'
+import level10, { LANTERN, OFFER_EVERY } from '../src/levels/level10/index.js'
 import { seededRng } from '../src/levels/rng.js'
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms))
@@ -124,5 +124,46 @@ test('past halfway the five guards ride ON THE ROAD behind the horse, closing in
   // slow to gain at first: less ground made up in the first half of the chase than in the second
   assert.ok(gapOf(start) - gapOf(mid) < gapOf(mid) - gapOf(late), 'they gain slowly, then faster')
   assert.deepEqual(ap.streams.A.at(-1).guards, late.guards, 'both players see the same guards')
+  level10.dispose(s)
+})
+
+test('every 20th failure in a row offers to switch sides; both must agree; a no waits for the next 20', async () => {
+  const rng = seededRng(5)
+  const s = level10.create({ rng })
+  const ap = fakeApi(rng)
+  ap.switches = 0
+  ap.switchSides = () => ap.switches++
+  level10.start(s, ap)
+  const crash = async () => {
+    s.goAt = Date.now() - 1
+    await wait(50)
+    s.horse.x += WIDTH * 3
+    await wait(50)
+    assert.equal(s.status, 'crashed')
+  }
+  const retry = () => level10.action(s, 'A', { type: 'retry' }, ap)
+
+  for (let i = 1; i < OFFER_EVERY; i++) { await crash(); assert.equal(level10.view(s, 'A').offer, undefined); retry() }
+  await crash() // the 20th
+  assert.deepEqual(level10.view(s, 'A').offer, { mine: null, theirs: null })
+  retry()
+  assert.equal(s.status, 'crashed', 'no new ride until the offer is answered')
+  level10.action(s, 'A', { type: 'switchVote', yes: true }, ap)
+  assert.deepEqual(level10.view(s, 'B').offer, { mine: null, theirs: true })
+  assert.equal(ap.switches, 0, 'one yes is not enough')
+  level10.action(s, 'B', { type: 'switchVote', yes: true }, ap)
+  assert.equal(ap.switches, 1)
+  assert.equal(level10.view(s, 'A').offer, undefined)
+  retry()
+  assert.equal(s.status, 'countdown')
+
+  for (let i = 1; i < OFFER_EVERY; i++) { await crash(); assert.equal(level10.view(s, 'B').offer, undefined); retry() }
+  await crash() // the 40th
+  assert.ok(level10.view(s, 'B').offer, 'asked again after the next 20')
+  level10.action(s, 'B', { type: 'switchVote', yes: false }, ap)
+  assert.equal(level10.view(s, 'A').offer, undefined, 'a no closes it')
+  assert.equal(ap.switches, 1)
+  retry()
+  assert.equal(s.status, 'countdown')
   level10.dispose(s)
 })

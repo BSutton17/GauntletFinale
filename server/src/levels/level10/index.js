@@ -5,6 +5,7 @@
 // Leave the road -> "You Crashed", try again on a different road. Out of time (2:00) -> "You Crashed" too.
 // Reaching the finish ALSO shows "You Crashed" (no retry button): that's the twist into the King's story.
 // Past halfway, five red arrows (the guards on horseback) slowly rise from the bottom of both screens.
+// Every 20th failure in a row, the crash screen teases them and offers to switch sides; both must agree.
 //
 // ⚠️ The server runs the horse. Player 1's browser only ever gets the bit of road inside the lantern.
 import { roads, locate, WIDTH, LIMIT_SEC, ROAD_COUNT, SAMPLE } from './roads.js'
@@ -17,6 +18,7 @@ const FLICKER_EVERY_MS = 5000
 const FLICKER_CHANCE = 0.1
 const FLICKER_MS = 2500
 const FINISH_HOLD_MS = 4000     // "You Crashed" on screen before the story takes over
+export const OFFER_EVERY = 20   // failures in a row before the switch-sides offer (and again every 20 after)
 
 setTimeout(() => roads(), 0)    // build the 20 roads in the background as soon as the server starts
 
@@ -70,6 +72,12 @@ function chasers(state) {
   })
 }
 
+// Crashing and running out of time both count. On every 20th in a row, offer to switch sides.
+function failed(state) {
+  state.fails++
+  if (state.fails % OFFER_EVERY === 0) state.offer = { A: null, B: null } // each side's answer: null, true or false
+}
+
 function pose(state) {
   const h = state.horse
   return { x: +h.x.toFixed(2), y: +h.y.toFixed(2), h: +h.h.toFixed(3), v: +speedOf(h).toFixed(2) }
@@ -83,11 +91,11 @@ function tick(state, api) {
     step(state.horse, state.input)
     const where = locate(state.pts, state.horse.x, state.horse.y, state.at)
     state.at = where.i
-    if (where.off > WIDTH / 2) { state.status = 'crashed'; changed = true }
+    if (where.off > WIDTH / 2) { state.status = 'crashed'; changed = true; failed(state) }
     else if (state.at >= state.pts.length - 2) {
       state.status = 'finished'; changed = true
       state.finishTimer = setTimeout(() => api.complete(), FINISH_HOLD_MS)
-    } else if (now >= state.endsAt) { state.status = 'timeout'; changed = true }
+    } else if (now >= state.endsAt) { state.status = 'timeout'; changed = true; failed(state) }
     if (now >= state.nextFlicker) {
       state.nextFlicker += FLICKER_EVERY_MS
       if (api.rng.chance(FLICKER_CHANCE)) { state.lightOutUntil = now + FLICKER_MS }
@@ -108,7 +116,7 @@ function tick(state, api) {
 
 export default {
   create({ rng }) {
-    const state = { roadIdx: -1, ticker: null, finishTimer: null }
+    const state = { roadIdx: -1, ticker: null, finishTimer: null, fails: 0, offer: null }
     newRide(state, rng)
     return state
   },
@@ -123,6 +131,7 @@ export default {
       status: state.status, version: state.version, goAt: state.goAt, endsAt: state.endsAt, now: Date.now(),
       limitSec: LIMIT_SEC, width: WIDTH, start: pose(state),
     }
+    if (state.offer) common.offer = { mine: state.offer[role], theirs: state.offer[role === 'A' ? 'B' : 'A'] }
     if (role === 'A') return { ...common, lantern: LANTERN }
     // Player 2's map: the whole road (every 2 m is plenty to draw it)
     return { ...common, road: state.pts.filter((_, i) => i % 2 === 0 || i === state.pts.length - 1).map(p => [+p.x.toFixed(1), +p.y.toFixed(1)]) }
@@ -141,7 +150,16 @@ export default {
       state.at = at
       return {}
     }
-    if (msg?.type === 'retry' && (state.status === 'crashed' || state.status === 'timeout')) {
+    // The switch-sides offer: both say yes -> switch; either says no -> it's gone until the next 20 failures.
+    if (msg?.type === 'switchVote' && state.offer && state.offer[role] === null) {
+      if (!msg.yes) { state.offer = null; api.update(); return {} }
+      state.offer[role] = true
+      if (state.offer.A && state.offer.B) { state.offer = null; api.switchSides() }
+      api.update()
+      return {}
+    }
+    // (no new ride while the offer is still being answered)
+    if (msg?.type === 'retry' && !state.offer && (state.status === 'crashed' || state.status === 'timeout')) {
       newRide(state, api.rng)
       api.update()
       return {}

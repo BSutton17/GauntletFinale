@@ -121,13 +121,36 @@ function Clock({ view }) {
   )
 }
 
+// Every 20th crash in a row: switch sides? Both have to say yes; the server does the switching.
+function SwitchOffer({ offer }) {
+  const { send, spectator, players, role } = useLevel()
+  const partner = players[role === 'A' ? 'B' : 'A']?.name ?? 'Your partner'
+  return (
+    <div className="l10-offer">
+      <p>Wow. You guys really suck at this, do you want to switch sides?</p>
+      {offer.mine === true
+        ? <p className="faint">Waiting for {partner}…</p>
+        : !spectator && (
+          <>
+            {offer.theirs === true && <p className="faint">{partner} wants to switch.</p>}
+            <div className="l10-offer-buttons">
+              <button className="btn" onClick={() => send({ type: 'switchVote', yes: true })}>Switch sides</button>
+              <button className="btn ghost" onClick={() => send({ type: 'switchVote', yes: false })}>Keep sides</button>
+            </div>
+          </>
+        )}
+    </div>
+  )
+}
+
 function Crashed({ view }) {
   const { send, spectator } = useLevel()
   if (!['crashed', 'timeout', 'finished'].includes(view.status)) return null
   return (
     <div className="l10-crash">
       <h2>You Crashed</h2>
-      {view.status !== 'finished' && !spectator && <button className="btn" onClick={() => send({ type: 'retry' })}>Try again</button>}
+      {view.offer && <SwitchOffer offer={view.offer} />}
+      {view.status !== 'finished' && !view.offer && !spectator && <button className="btn" onClick={() => send({ type: 'retry' })}>Try again</button>}
     </div>
   )
 }

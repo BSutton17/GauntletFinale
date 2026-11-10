@@ -161,9 +161,9 @@ export const STORIES = {
   6: [
     scene('corridor'),
     n('The two guards look at each other and nod.'),
-    n('The guard who stopped {A} and {B} rummages through his pocket and pulls out two sheets of paper.'),
-    d('“Every guard should know who these two are, correct?”'),
-    n('{A} and {B} each take one of the pictures and examine it carefully.'),
+    n('The guard who stopped {A} and {B} rummages through his pocket and pulls out a sheet of paper covered in tiny numbers, a blank sheet, and a box of paints.'),
+    d('“Paint it, and tell me what it is. Every guard knows this one.”'),
+    n('{A} takes the numbers. {B} takes the paints.'),
     n('They look at each other… they are so screwed.'),
   ],
 
@@ -171,7 +171,7 @@ export const STORIES = {
     scene('corridor'),
     n('Both guards study the two suspiciously for a moment.'),
     n('Then they both laugh.'),
-    d('“Of course! Those are the king’s royal pets.”'),
+    d('“Of course! That’s the king’s royal cat.”'),
     d('“Carry on.”'),
     n('The guards walk off.'),
     n('{A} and {B} both let out a sigh of relief before continuing on.'),

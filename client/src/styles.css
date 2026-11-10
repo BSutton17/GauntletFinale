@@ -493,10 +493,34 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 .l6-hint { text-align: center; font-style: italic; color: #6b3d12; margin: 14px 0 4px; font-size: 1.05em; }
 
 /* ── level 7: the wanted posters ──────────────────────────────────────── */
-.l7 { width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
-.l7-picture { width: min(360px, 80vw); height: auto; aspect-ratio: 1; image-rendering: pixelated; border: 6px solid #6b5434; box-shadow: 0 4px 14px rgba(0,0,0,.4); margin: 6px 0 4px; }
+.l7 { width: min(900px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
+.l7-screen { --g: min(520px, 90vw, calc(100dvh - 190px)); }
+.l7-board { display: flex; gap: 16px; align-items: flex-start; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+.l7-grid {
+  width: max(250px, var(--g)); aspect-ratio: 1; display: grid; grid-template-columns: repeat(var(--n), 1fr);
+  border: 3px solid #6b5434; background: #6b5434; gap: 1px; box-shadow: 0 4px 14px rgba(0,0,0,.35);
+}
+.l7-grid span { background: #fdfaf3; display: flex; align-items: center; justify-content: center; min-width: 0; }
+.l7-grid.numbers span { font-family: ui-monospace, monospace; font-size: calc(max(250px, var(--g)) / 25 * .58); line-height: 1; color: #3a2b17; }
+.l7-grid.canvas { touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.l7-key { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-family: ui-monospace, monospace; font-size: 1.15em; color: #3a2b17; }
+.l7-key li { display: flex; align-items: center; gap: 8px; }
+.l7-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #3a2b17; display: inline-block; }
+.l7-side { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: min(260px, 100%); }
+.l7-palette { display: grid; grid-template-columns: repeat(4, 44px); gap: 8px; justify-content: center; }
+.l7-swatch { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #3a2b17; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.l7-swatch.on { outline: 3px solid var(--gold); outline-offset: 2px; transform: scale(1.08); }
+.l7-swatch.eraser { background: #fdfaf3; color: #3a2b17; }
 .l7 .answer-form { width: 100%; }
 .l7-partner { margin-top: 10px !important; color: #5a4526 !important; }
+/* short (sideways phone) screens: the grid takes the height, everything else sits beside it */
+@media (max-height: 500px) {
+  .l7-screen { --g: calc(100dvh - 44px); padding-top: 8px; padding-bottom: 8px; }
+  .l7-screen .l7 { padding: 8px 12px; }
+  .l7-screen .l7 > .hint { display: none; }
+  .l7-board { flex-wrap: nowrap; margin-top: 0; }
+  .l7-partner { margin-top: 4px !important; }
+}
 
 /* ── level 8: the Mystic Square ──────────────────────────────────────── */
 .l8-rules { width: min(900px, 100%); line-height: 1.4; }
@@ -593,6 +617,10 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 @media (pointer: fine) { .l10-pad { display: none; } }
 .l10-dark { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #4a3a2a; font-style: italic; font-size: 18px; pointer-events: none; }
 .l10-crash { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; animation: fadeIn .25s both; z-index: 5; }
+.l10-offer { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: min(560px, 92vw); text-align: center; padding: 0 16px; }
+.l10-offer > p:first-child { margin: 0; font-size: clamp(18px, 2.6vw, 24px); font-style: italic; color: var(--text); }
+.l10-offer p { margin: 0; }
+.l10-offer-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .l10-crash h2 { font-family: var(--font-black); font-weight: 400; font-size: clamp(54px, 12vw, 120px); color: #e01e1e; margin: 0; text-shadow: 0 0 24px rgba(224,30,30,.5); }
 
 /* ── level 11: the King's poker game ──────────────────────────────────── */

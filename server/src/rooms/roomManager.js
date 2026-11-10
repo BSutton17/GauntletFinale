@@ -163,6 +163,8 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         if (transport.hasWatchers(room.code)) transport.toWatchers(room.code, 'level:stream', { role, event, data })
       },
       complete: (result = {}) => { if (live()) completeLevel(room, result) },
+      // the players swap puzzle sides (the same switch the admin has); the caller then calls update()
+      switchSides: () => { if (live()) room.swapped = !room.swapped },
     }
   }
 
