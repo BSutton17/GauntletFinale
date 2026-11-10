@@ -32,7 +32,7 @@ export default function Home({ socket, user, notice, clearNotice, onSignOut, onA
       {notice && <p className="error">{notice}</p>}
 
       <div className="panel">
-        <h2>Who are you, prisoner?</h2>
+        <h2>What is your name?</h2>
         <label className="field">
           <span>Name</span>
           <input value={name} maxLength={NAME_MAX} onChange={(e) => setName(e.target.value)} autoComplete="given-name" />
