@@ -14,7 +14,7 @@ export const config = {
   isProduction,
   mongoUri: env.MONGO_URI || '',
   mongoDb: env.MONGO_DB || 'gauntlet_finale',
-  clientOrigins: (env.CLIENT_ORIGIN || 'http://localhost:5173,https://kmssykfhxzf3.netlify.app')
+  clientOrigins: (env.CLIENT_ORIGIN || 'http://localhost:5173,https://kmssykfhxzf3.vercel.app,https://kmssykfhxzf3.netlify.app')
     .split(',').map(s => s.trim()).filter(Boolean),
   googleClientId: env.GOOGLE_CLIENT_ID
     || '607981026586-o3k5n213tdvhev5526v74aa9804lg74b.apps.googleusercontent.com',
