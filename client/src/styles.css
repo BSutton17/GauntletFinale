@@ -593,7 +593,10 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 .l9-partner { fill: #7cf3a0; stroke: #0b1f12; stroke-width: .08; }
 .l9-me { fill: #ffd27a; stroke: #3b2508; stroke-width: .08; }
 .l9-initial { font-family: var(--font-display); font-weight: 900; font-size: .42px; text-anchor: middle; fill: #0b1f12; pointer-events: none; }
-.l9-mini { position: absolute; top: 8px; right: 8px; width: 74px; height: 74px; border: 1px solid #6b5434; border-radius: 4px; opacity: .85; }
+.l9-mini-key { stroke: #fff8e6; stroke-width: .5; animation: l9MiniKey 1s ease-in-out infinite; }
+@keyframes l9MiniKey { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .l9-mini-key { animation: none; } }
+.l9-mini { position: absolute; top: 8px; right: 8px; width: 74px; height: 74px; overflow: visible; border: 1px solid #6b5434; border-radius: 4px; opacity: .85; }
 .l9-pad { position: absolute; left: 10px; bottom: 10px; width: 132px; height: 132px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); opacity: .55; }
 .l9-padbtn { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; border-radius: 10px; font-size: 18px; touch-action: none; -webkit-touch-callout: none; }
 .l9-padbtn:active { background: rgba(255,255,255,.35); }

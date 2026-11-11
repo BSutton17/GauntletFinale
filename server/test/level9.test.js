@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { generateMaze, W, HALF, MID_I, ENTRY_I, DIRS, idx, rc, BOT, TUNE } from '../src/levels/level9/maze.js'
-import level9 from '../src/levels/level9/index.js'
+import level9, { REVEAL_SEC } from '../src/levels/level9/index.js'
 import { seededRng } from '../src/levels/rng.js'
 
 const dirTo = (from, to) => {
@@ -121,5 +121,30 @@ test('running out of time fails the maze; trying again builds a brand-new one', 
   assert.equal(s.version, 2)
   assert.notEqual(Buffer.from(s.walls).toString('base64'), before)
   assert.ok(s.endsAt > Date.now() + 60_000)
+  level9.dispose(s)
+})
+
+test("with a minute left, each player sees where the partner's unfound keys are (and not before)", () => {
+  const rng = seededRng(4)
+  const s = level9.create({ rng })
+  const ap = api(rng)
+  s.endsAt = Date.now() + (REVEAL_SEC + 5) * 1000
+  assert.equal(level9.view(s, 'A').revealedKeys, null, 'nothing is sent with more than a minute left')
+  s.endsAt = Date.now() + (REVEAL_SEC - 1) * 1000
+  for (const role of ['A', 'B']) {
+    const partner = role === 'A' ? 'B' : 'A'
+    const keys = level9.view(s, role).revealedKeys
+    assert.equal(keys.length, 3, `${role} sees all three of the partner's keys`)
+    for (const k of keys) {
+      assert.equal(s.things.get(idx(k.r, k.c))?.kind, 'key')
+      assert.equal(s.things.get(idx(k.r, k.c)).side, partner, "only the partner's side, never your own")
+    }
+  }
+  // a key that's been picked up is no longer shown
+  const [first] = level9.view(s, 'A').revealedKeys
+  s.things.delete(idx(first.r, first.c))
+  assert.equal(level9.view(s, 'A').revealedKeys.length, 2)
+  s.done = true
+  assert.equal(level9.view(s, 'A').revealedKeys, null)
   level9.dispose(s)
 })

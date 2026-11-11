@@ -5,10 +5,13 @@
 //
 // ⚠️ Anti-cheat: a player's browser never receives their own half's layout or their own position (except on the
 // meeting square, which both can always see). Only the partner's surroundings, within the circle.
+// With a minute left, each player is shown where every key still lying on their PARTNER's side is (the side they can
+// see). Those positions are only sent from that moment on.
 import { generateMaze, W, H, HALF, MID, MID_I, ENTRY_I, START, DIRS, idx, rc, halfOf } from './maze.js'
 
 const SIGHT = 5.5        // radius of the circle around your partner, in squares
 const MIN_STEP_MS = 60   // fastest anyone can move (also stops scripted zipping)
+export const REVEAL_SEC = 60 // with this long left, the partner's unfound keys are revealed (the user's call)
 const other = (role) => (role === 'A' ? 'B' : 'A')
 
 function fresh(rng) {
@@ -27,14 +30,29 @@ function fresh(rng) {
   }
 }
 
-function startClock(state, api) {
+function stopClocks(state) {
   clearTimeout(state.clock)
+  clearTimeout(state.revealClock)
+}
+
+function startClock(state, api) {
+  stopClocks(state)
   state.endsAt = Date.now() + state.timerSec * 1000
   state.clock = setTimeout(() => {
     if (state.done) return
     state.failed = true
     api.update()
   }, state.timerSec * 1000)
+  // at one minute left, send everyone the revealed keys
+  state.revealClock = setTimeout(() => { if (!state.done && !state.failed) api.update() }, Math.max(0, (state.timerSec - REVEAL_SEC) * 1000))
+}
+
+// Keys still lying on `side`'s half, once there's a minute or less left (a little slack for the timer firing early).
+function revealedKeys(state, side) {
+  if (state.done || state.failed || !state.endsAt || Date.now() < state.endsAt - REVEAL_SEC * 1000 - 250) return null
+  const out = []
+  for (const [i, t] of state.things) if (t.kind === 'key' && t.side === side) { const { r, c } = rc(i); out.push({ r, c, color: t.color }) }
+  return out
 }
 
 function thingView(t) {
@@ -88,6 +106,7 @@ export default {
       w: W, h: H, half: HALF, mid: MID, sight: SIGHT,
       partner: p,
       onMid: { A: state.pos.A === MID_I, B: state.pos.B === MID_I },
+      revealedKeys: revealedKeys(state, partner),
       cells,
       inv: state.inv,
       timerSec: state.timerSec,
@@ -102,7 +121,7 @@ export default {
   action(state, role, msg, api) {
     if (msg?.type === 'restart') {
       if (!state.failed) return {}
-      clearTimeout(state.clock)
+      stopClocks(state)
       Object.assign(state, fresh(api.rng), { version: state.version + 1 })
       startClock(state, api)
       api.update()
@@ -139,7 +158,7 @@ export default {
 
     if (state.pos.A === MID_I && state.pos.B === MID_I && state.inv.A.items.length === 3 && state.inv.B.items.length === 3) {
       state.done = true
-      clearTimeout(state.clock)
+      stopClocks(state)
       state.finishTimer = setTimeout(() => api.complete(), 3000)
     }
     api.update()
@@ -147,7 +166,7 @@ export default {
   },
 
   dispose(state) {
-    clearTimeout(state.clock)
+    stopClocks(state)
     clearTimeout(state.finishTimer)
   },
 }

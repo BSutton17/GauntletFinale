@@ -207,6 +207,10 @@ export default function Level9({ view }) {
           <rect x="0" y={myHalfTop ? view.half : 0} width={view.w} height={view.half} fill="#2a2118" />
           <rect x={view.mid.c - 1} y={view.mid.r - 1} width="3" height="3" fill="#d9a441" />
           <circle cx={p.c + 0.5} cy={p.r + 0.5} r="2" fill="#7cf3a0" />
+          {/* one minute left: where your partner's unfound keys are (the server only sends them from then on) */}
+          {view.revealedKeys?.map(k => (
+            <circle key={`rk${k.r}-${k.c}`} cx={k.c + 0.5} cy={k.r + 0.5} r="1.9" className="l9-mini-key" style={{ fill: COLOR[k.color] }} />
+          ))}
         </svg>
 
         {!spectator && (
@@ -239,7 +243,9 @@ export default function Level9({ view }) {
         )}
         {view.done && <div className="l9-overlay done"><h2>Together at last!</h2><p className="faint">Now… the stables.</p></div>}
       </div>
-      <p className="l9-hint">{spectator ? 'Spectating' : `Find your lantern, reins and saddle, then meet ${partnerName} on the gold square. You can only see ${partnerName}’s side.`}</p>
+      <p className="l9-hint">{spectator ? 'Spectating'
+        : view.revealedKeys?.length ? `One minute left! ${partnerName}’s missing keys are now marked on the map (top right).`
+        : `Find your lantern, reins and saddle, then meet ${partnerName} on the gold square. You can only see ${partnerName}’s side.`}</p>
     </div>
   )
 }
