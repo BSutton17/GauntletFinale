@@ -161,9 +161,10 @@ export const STORIES = {
   6: [
     scene('corridor'),
     n('The two guards look at each other and nod.'),
-    n('The guard who stopped {A} and {B} rummages through his pocket and pulls out a sheet of paper covered in tiny numbers, a blank sheet, and a box of paints.'),
-    d('“Paint it, and tell me what it is. Every guard knows this one.”'),
-    n('{A} takes the numbers. {B} takes the paints.'),
+    n('The guard who stopped {A} and {B} rummages through his pocket and pulls out a sheet of paper and a pencil.'),
+    d('“Tell me what kind of pet the king has and draw it.”'),
+    n('{A} and {B} look at the pencil and paper for a second, wondeing if the gaurd is being serious.'),
+    d('“I’m completely serious...”'),
     n('They look at each other… they are so screwed.'),
   ],
 
