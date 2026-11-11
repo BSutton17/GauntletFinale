@@ -55,3 +55,9 @@ test('right dots advance, a wrong dot scatters everything, old ids are ignored, 
   assert.equal(s.done, true)
   level5.dispose(s)
 })
+
+test('L5: the touch-screen hit area is bigger but a straight drag between pins still clears every other pin', () => {
+  assert.ok(LIMITS.TOUCH_HIT_R > LIMITS.HIT_R)
+  // the generator keeps lines CLEARANCE (less 0.2 of rounding) from other pins: leave at least a unit for a wobbly finger
+  assert.ok(LIMITS.CLEARANCE - 0.2 - LIMITS.TOUCH_HIT_R >= 0.99, 'room for a wobbly finger')
+})

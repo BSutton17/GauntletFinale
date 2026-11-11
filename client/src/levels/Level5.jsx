@@ -4,6 +4,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLevel } from '../lib/levelContext.js'
 
+// Touch screens: bigger pins and a bigger touch area (the server sends how big).
+const coarse = () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+
 // Distance from p to segment a-b, and how far along it (0..1) the closest point is.
 function segInfo(p, a, b) {
   const dx = b.x - a.x, dy = b.y - a.y
@@ -28,6 +31,9 @@ function Picker({ view }) {
   const drag = useRef(null)          // { last: {x,y} }
   const sent = useRef(new Set())     // dots already reported for this layout
   const [pointer, setPointer] = useState(null)
+  const [touch] = useState(coarse)
+  const hitR = touch ? (view.touchHitR ?? view.hitR) : view.hitR
+  const dotR = touch ? 1.9 : 1.25
 
   useEffect(() => { sent.current = new Set(); drag.current = null; setPointer(null) }, [view.version])
 
@@ -50,7 +56,7 @@ function Picker({ view }) {
     for (const d of view.dots) {
       if (visited.has(d.id) || sent.current.has(d.id)) continue
       const { d: dist, t } = segInfo(d, a, b)
-      if (dist <= view.hitR) hits.push({ id: d.id, t })
+      if (dist <= hitR) hits.push({ id: d.id, t })
     }
     hits.sort((x, y) => x.t - y.t)
     for (const h of hits) { sent.current.add(h.id); send({ type: 'touch', id: h.id }) }
@@ -75,14 +81,14 @@ function Picker({ view }) {
   const onUp = () => { drag.current = null; setPointer(null) }
 
   return (
-    <div className="l5">
+    <div className="l5 picker-layout">
       <Status view={view} joined={view.visited.length} />
       <svg ref={svgRef} className="l5-board picker" viewBox={`0 0 ${view.w} ${view.h}`}
         onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
         <rect x="0" y="0" width={view.w} height={view.h} className="l5-bg" />
         {path.length > 1 && <polyline className="l5-line" points={path.map(d => `${d.x},${d.y}`).join(' ')} />}
         {pointer && lastDot && <line className="l5-live" x1={lastDot.x} y1={lastDot.y} x2={pointer.x} y2={pointer.y} />}
-        {view.dots.map(d => <circle key={d.id} cx={d.x} cy={d.y} r={1.25} className={`l5-dot ${visited.has(d.id) ? 'done' : ''}`} />)}
+        {view.dots.map(d => <circle key={d.id} cx={d.x} cy={d.y} r={dotR} className={`l5-dot ${visited.has(d.id) ? 'done' : ''}`} />)}
       </svg>
       <p className="l5-hint">{spectator ? 'Spectating' : 'Drag through the pins in order. Your partner knows the order. Touching a wrong pin scatters them all.'}</p>
     </div>

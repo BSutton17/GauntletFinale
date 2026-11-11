@@ -4,7 +4,7 @@
 //
 // ⚠️ Anti-cheat: Player 1's browser gets the dots under random ids, in a shuffled order. The order (the
 // numbers) only ever goes to Player 2.
-import { generateDots, W, H, HIT_R, COUNT } from './dots.js'
+import { generateDots, W, H, HIT_R, TOUCH_HIT_R, COUNT } from './dots.js'
 
 const newId = (rng) => Array.from({ length: 8 }, () => 'abcdefghijkmnpqrstuvwxyz23456789'[rng.int(32)]).join('')
 
@@ -19,7 +19,7 @@ export default {
   },
 
   view(state, role) {
-    const common = { w: W, h: H, hitR: HIT_R, total: COUNT, version: state.version, wrong: state.wrong, done: state.done }
+    const common = { w: W, h: H, hitR: HIT_R, touchHitR: TOUCH_HIT_R, total: COUNT, version: state.version, wrong: state.wrong, done: state.done }
     if (role === 'A') {
       const byId = new Map(state.dots.map(d => [d.id, d]))
       return {

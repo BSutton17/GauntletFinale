@@ -6,7 +6,10 @@
 export const W = 160
 export const H = 90
 export const COUNT = 50
-export const HIT_R = 2.4          // how close the finger has to come to "touch" a dot
+export const HIT_R = 2.4          // how close the pointer has to come to "touch" a dot
+// On touch screens the pins are drawn bigger and easier to hit (the user asked). It must stay well inside CLEARANCE,
+// so a straight drag from one pin to the next still can't brush a wrong one.
+export const TOUCH_HIT_R = 2.8
 const MARGIN = 6
 const MIN_SPACING = 7.5
 const CLEARANCE = 4                // a neighbour-to-neighbour line stays this far from every other dot
@@ -71,4 +74,4 @@ export function generateDots(rng) {
 }
 
 export const JUMP_DOTS = JUMPS_BEFORE
-export const LIMITS = { MIN_SPACING, CLEARANCE, STEP, JUMP_MIN, MARGIN }
+export const LIMITS = { MIN_SPACING, CLEARANCE, STEP, JUMP_MIN, MARGIN, HIT_R, TOUCH_HIT_R }
