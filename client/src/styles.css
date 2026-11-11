@@ -586,7 +586,9 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 .l9-gate { stroke-width: .1; opacity: .9; }
 .l9-gate.open { opacity: .5; stroke-dasharray: .15 .1; }
 .l9-thing-item { color: #f2deb0; filter: drop-shadow(0 0 .2px #ffd27a); }
-.l9-mid { fill: rgba(217,164,65,.35); stroke: #ffd27a; stroke-width: .12; filter: drop-shadow(0 0 .3px #ffd27a); }
+.l9-mid { fill: #ffd27a; opacity: .75; stroke: none; filter: drop-shadow(0 0 .25px #ffd27a); animation: l9MidGlow 2.4s ease-in-out infinite; }
+@keyframes l9MidGlow { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
+@media (prefers-reduced-motion: reduce) { .l9-mid { animation: none; } }
 .l9-fog { fill: #000; opacity: .88; }
 .l9-partner { fill: #7cf3a0; stroke: #0b1f12; stroke-width: .08; }
 .l9-me { fill: #ffd27a; stroke: #3b2508; stroke-width: .08; }
@@ -623,6 +625,13 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 .l10-pad.right { right: 14px; }
 .l10-btn { width: 64px; height: 64px; border-radius: 14px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; font-size: 22px; touch-action: none; -webkit-touch-callout: none; }
 .l10-btn:active { background: rgba(255,255,255,.35); }
+/* the steering zone: the whole bottom-right corner, much bigger than the two buttons drawn in it */
+.l10-pad.right.l10-steer {
+  right: 0; bottom: 0; width: 232px; height: 180px; padding: 0 14px 14px 0; gap: 12px;
+  align-items: flex-end; justify-content: flex-end; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.l10-steer .l10-btn { width: 72px; height: 72px; display: inline-flex; align-items: center; justify-content: center; pointer-events: none; }
+.l10-btn.on { background: rgba(255,255,255,.35); }
 @media (pointer: fine) { .l10-pad { display: none; } }
 .l10-dark { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #4a3a2a; font-style: italic; font-size: 18px; pointer-events: none; }
 .l10-crash { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; animation: fadeIn .25s both; z-index: 5; }

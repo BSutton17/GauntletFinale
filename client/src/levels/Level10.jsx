@@ -155,6 +155,42 @@ function Crashed({ view }) {
   )
 }
 
+// Touch steering (the user asked for more forgiving left/right): one zone covering the bottom-right corner, much
+// bigger than the two buttons drawn in it. Its left half steers left, its right half right; the thumb can slide
+// from one to the other, and nothing lets go until the thumb lifts.
+function SteerZone({ setKey }) {
+  const [dir, setDir] = useState(null)
+  const finger = useRef(null) // { id, dir }
+  const sideOf = (e) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    return e.clientX < r.left + r.width / 2 ? 'left' : 'right'
+  }
+  const steer = (next) => {
+    const prev = finger.current?.dir
+    if (prev === next) return
+    if (prev) setKey(prev, false)
+    if (next) setKey(next, true)
+    if (finger.current) finger.current.dir = next
+    setDir(next)
+  }
+  const onDown = (e) => {
+    if (finger.current) return // one steering thumb at a time
+    e.preventDefault()
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+    finger.current = { id: e.pointerId, dir: null }
+    steer(sideOf(e))
+  }
+  const onMove = (e) => { if (finger.current?.id === e.pointerId) steer(sideOf(e)) }
+  const onUp = (e) => { if (finger.current?.id !== e.pointerId) return; steer(null); finger.current = null }
+  return (
+    <div className="l10-pad right l10-steer" onContextMenu={e => e.preventDefault()}
+      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onLostPointerCapture={onUp}>
+      <span className={`l10-btn${dir === 'left' ? ' on' : ''}`}><FaArrowLeft /></span>
+      <span className={`l10-btn${dir === 'right' ? ' on' : ''}`}><FaArrowRight /></span>
+    </div>
+  )
+}
+
 // ── Player 1: the rider ───────────────────────────────────────────────
 function Rider({ view }) {
   const { send, spectator, dev } = useLevel()
@@ -230,7 +266,7 @@ function Rider({ view }) {
       {!spectator && (
         <>
           <div className="l10-pad left">{pad('up', FaArrowUp)}{pad('down', FaArrowDown)}</div>
-          <div className="l10-pad right">{pad('left', FaArrowLeft)}{pad('right', FaArrowRight)}</div>
+          <SteerZone setKey={setKey} />
         </>
       )}
       <Crashed view={view} />

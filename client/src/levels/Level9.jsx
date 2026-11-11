@@ -158,11 +158,15 @@ export default function Level9({ view }) {
           <rect x="0" y={myHalfTop ? 0 : view.half} width={view.w} height={view.half} fill={`url(#l9hatch${me})`} />
           <rect x="0" y={myHalfTop ? view.half : 0} width={view.w} height={view.half} fill="#120e0a" />
           <text x={view.w / 2} y={myHalfTop ? view.half / 2 : view.half * 1.5} className="l9-ownlabel">Your side: you can’t see it</text>
-          <line x1="0" y1={view.half} x2={view.w} y2={view.half} className="l9-split" />
+          {/* the line between the halves stops either side of the meeting square: the way through is open */}
+          <line x1="0" y1={view.half} x2={view.mid.c} y2={view.half} className="l9-split" />
+          <line x1={view.mid.c + 1} y1={view.half} x2={view.w} y2={view.half} className="l9-split" />
           <rect x="-.15" y="-.15" width={view.w + 0.3} height={view.h + 0.3} className="l9-edge" />
 
           {/* what's visible around your partner */}
           {cells.map(({ r, c }) => <rect key={`f${r}-${c}`} x={c} y={r} width="1" height="1" className="l9-floor" />)}
+          {/* the meeting square, always visible: a glow with NO outline, under the walls (an outline read as walls) */}
+          <rect x={view.mid.c + 0.1} y={view.mid.r + 0.1} width=".8" height=".8" rx=".12" className="l9-mid" />
           {cells.map(({ r, c, w }) => (
             <g key={`w${r}-${c}`} className="l9-wall">
               {!(w & N) && <line x1={c} y1={r} x2={c + 1} y2={r} />}
@@ -172,9 +176,6 @@ export default function Level9({ view }) {
             </g>
           ))}
           {cells.filter(x => x.t).map(({ r, c, t }) => renderThing(r, c, t))}
-
-          {/* the meeting square, always visible */}
-          <rect x={view.mid.c} y={view.mid.r} width="1" height="1" className="l9-mid" />
 
           {/* the fog: only a circle around your partner can be seen */}
           <rect x={x0 - 1} y={y0 - 1} width={cols + 2} height={rows + 2} className="l9-fog" mask={`url(#l9fog${me})`} />
