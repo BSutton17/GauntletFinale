@@ -2,16 +2,21 @@
 //   Heads-up rules: the dealer (button) posts the small blind and acts first before the flop, last after it.
 //   Blinds start at 1/2; every BLIND_EVERY hands the big blind goes up by BLIND_STEP (the user's rule: "up by 2
 //   every 2 rounds"), the small blind is always half of it: 1/2, 2/4, 3/6, then capped at 4/8 (the user's cap).
+//   For the first NO_ALL_IN_HANDS hands nobody may go all in ("the King wants to be entertained"): no bet can
+//   reach the smaller of the two stacks, so a call can never put anyone all in either.
+//   The King can cover a player's blind (a quiz reward, see index.js): those chips come from outside the game,
+//   so g.total, the coins on the table, can grow past 50.
 import { newDeck, best, compare } from './cards.js'
 
 export const START_STACK = 25
 export const BLIND_EVERY = 2
 export const BLIND_STEP = 2
 export const BIG_BLIND_CAP = 8
+export const NO_ALL_IN_HANDS = 2
 const other = (p) => (p === 'A' ? 'B' : 'A')
 
 export function newGame() {
-  return { stacks: { A: START_STACK, B: START_STACK }, handNo: 0, button: 'B', hand: null, last: null, over: null }
+  return { stacks: { A: START_STACK, B: START_STACK }, total: START_STACK * 2, handNo: 0, button: 'B', hand: null, last: null, over: null }
 }
 
 export function blindsFor(handNo) {
@@ -19,8 +24,8 @@ export function blindsFor(handNo) {
   return [bb / 2, bb]
 }
 
-// Deal a new hand: move the button, post the blinds, two cards each.
-export function startHand(g, rng) {
+// Deal a new hand: move the button, post the blinds, two cards each. `cover`: the King pays that player's blind.
+export function startHand(g, rng, { cover = null } = {}) {
   g.handNo++
   g.button = other(g.button)
   const [sb, bb] = blindsFor(g.handNo)
@@ -33,6 +38,12 @@ export function startHand(g, rng) {
   }
   g.hand = h
   g.last = null
+  if (cover === 'A' || cover === 'B') {
+    const amount = cover === g.button ? sb : bb
+    g.stacks[cover] += amount
+    g.total += amount
+    h.covered = { who: cover, amount }
+  }
   post(g, g.button, sb)
   post(g, other(g.button), bb)
   h.log.push(`Blinds ${sb}/${bb}`)
@@ -55,13 +66,15 @@ export function options(g, who) {
   const me = h.bets[who], them = h.bets[other(who)]
   const stack = g.stacks[who]
   const toCall = Math.min(them - me, stack)
-  const maxTo = me + stack
+  // early hands: never as far as the smaller stack (one coin short of it), so nobody is ever all in
+  const noAllIn = g.handNo <= NO_ALL_IN_HANDS
+  const maxTo = noAllIn ? Math.min(me + stack, them + g.stacks[other(who)]) - 1 : me + stack
   // a raise must be at least the last raise (or the big blind); all-in is always allowed
   const minTo = Math.min(maxTo, Math.max(them + h.minRaise, h.blinds[1]))
-  const canRaise = stack > toCall && g.stacks[other(who)] > 0
+  const canRaise = stack > toCall && g.stacks[other(who)] > 0 && maxTo > them
   // "Bet" when nobody has bet yet this street (after the flop); otherwise it's a raise
   const word = h.street !== 'preflop' && them === 0 ? 'Bet' : 'Raise'
-  return { canCheck: toCall === 0, toCall, canRaise, minTo, maxTo, word }
+  return { canCheck: toCall === 0, toCall, canRaise, minTo, maxTo, word, noAllIn }
 }
 
 // Apply an action. Returns an error string, or null.

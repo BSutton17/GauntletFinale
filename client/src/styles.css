@@ -660,7 +660,7 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 
 /* ── level 11: the King's poker game ──────────────────────────────────── */
 .l11 {
-  min-height: 100dvh; display: grid; grid-template-rows: auto auto 1fr auto auto; justify-items: center; gap: 8px;
+  position: relative; min-height: 100dvh; display: grid; grid-template-rows: auto auto 1fr auto auto; justify-items: center; gap: 8px;
   padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
   background: radial-gradient(ellipse at center, #1d3a24 0%, #10261a 55%, #07120c 100%);
 }
@@ -695,6 +695,25 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 .l11-raise { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .l11-raise input[type=range] { width: 160px; min-height: 0; padding: 0; background: none; border: 0; accent-color: #d9a441; }
 .l11-quick { display: flex; gap: 4px; }
+.l11-card.exposed { box-shadow: 0 0 0 3px var(--ember), 0 0 14px rgba(224,112,42,.6); }
+.l11-power { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; text-align: center; font-size: .9em; color: var(--gold); background: rgba(0,0,0,.45); border: 1px solid var(--gold-dim); border-radius: 10px; padding: 4px 12px; }
+.l11-peek { display: inline-flex; gap: 4px; }
+.l11-entertain { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 15; width: max-content; max-width: calc(100vw - 32px); font-family: var(--font-display); font-size: 1.25em; color: var(--gold); background: rgba(10,8,6,.92); border: 1px solid var(--gold); border-radius: 10px; padding: 10px 18px; text-align: center; animation: fadeIn .3s both; }
+.l11-quiz { position: absolute; inset: 0; z-index: 12; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn .4s both; }
+.l11-quiz-panel { width: min(520px, 100%); max-height: 100%; overflow-y: auto; text-align: center; }
+.l11-quiz-head { font-family: var(--font-display); font-size: .8em; letter-spacing: .15em; text-transform: uppercase; color: #6b4a1c; margin-bottom: 4px; }
+.l11-quiz-wait { color: #6b4a1c; min-height: 2.6em; display: flex; align-items: center; justify-content: center; font-style: italic; }
+.l11-quiz-note { color: #6b4a1c; }
+.l11-quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; animation: fadeIn .4s both; }
+.l11-quiz-opt:disabled { opacity: .8; cursor: default; }
+.l11-quiz-opt.picked { outline: 3px solid #5a3a12; outline-offset: 2px; opacity: 1; }
+.l11-quiz-opt.right { background: #2e6b33; border-color: #2e6b33; color: #fff; opacity: 1; }
+.l11-quiz-opt.wrong { background: var(--blood); border-color: var(--blood); color: #fff; opacity: 1; }
+.l11-quiz-opt.dim { opacity: .45; }
+.l11-quiz-result ul { list-style: none; padding: 0; margin: 6px 0; }
+.l11-quiz-result p { margin: 4px 0; }
+.l11-reward { color: #5a3a12; font-style: italic; }
+@media (max-width: 420px) { .l11-quiz-options { grid-template-columns: 1fr; } }
 .l11-help { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .l11-help-panel { width: min(620px, 100%); max-height: 90dvh; overflow-y: auto; }
 @media (max-height: 480px) {
