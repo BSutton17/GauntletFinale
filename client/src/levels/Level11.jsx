@@ -29,7 +29,7 @@ function Refresher({ onClose }) {
           <li>Your hand is the best five cards out of your two plus the five shared ones.</li>
           <li>Before each new deal of shared cards there’s a round of betting. On your turn you can <strong>check</strong> (bet nothing, if nobody has bet), <strong>call</strong> (match their bet), <strong>bet/raise</strong> (put in more), or <strong>fold</strong> (give up the hand and the pot).</li>
           <li>Every hand, the two players take turns paying small “blinds” so there’s always something to win. They go up every few hands.</li>
-          <li>If nobody folds, the best hand wins the pot. Win all the coins to win the game.</li>
+          <li>If nobody folds, the best hand wins the pot. Win all 50 coins to win the game.</li>
         </ul>
         <h3 className="l4-h">Hands, best to worst</h3>
         <ol className="l4-list l11-ranks">
@@ -141,7 +141,7 @@ function Result({ view, me, players }) {
       <p>{text}</p>
       {last.reason === 'showdown' && last.winner && <p className="faint small">{name(last.winner === 'A' ? 'B' : 'A')} had {last.hands[last.winner === 'A' ? 'B' : 'A']}</p>}
       {over
-        ? <p className="l11-over">{over === me ? `You have all ${view.total ?? 50} coins!` : `${players[over]?.name} has all ${view.total ?? 50} coins.`}</p>
+        ? <p className="l11-over">{over === me ? 'You have all 50 coins!' : `${players[over]?.name} has all 50 coins.`}</p>
         : <p className="faint small">Next hand coming…</p>}
     </div>
   )
