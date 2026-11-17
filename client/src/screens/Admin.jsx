@@ -1,17 +1,68 @@
 // Admin: every live game, and a silent spectator seat. Players are never told (the server keeps watchers
-// in a separate channel and never counts them).
-import { useEffect, useState } from 'react'
+// in a separate channel and never counts them). Also recorded games (over three minutes) to watch back.
+import { useCallback, useEffect, useState } from 'react'
 import { request } from '../lib/socket.js'
 import RoomView from './RoomView.jsx'
+import ReplayPlayer, { clockText } from './ReplayPlayer.jsx'
 
 const PHASE = { lobby: 'In the lobby', story: 'Story', card: 'Level card', level: 'Puzzle', choice: 'The choice', credits: 'Credits' }
 
+function levelsText(r) {
+  if (!r.levelFrom) return 'No puzzles'
+  return r.levelFrom === r.levelTo ? `Level ${r.levelFrom}` : `Levels ${r.levelFrom}–${r.levelTo}`
+}
+
+function Replays({ socket, onOpen }) {
+  const [list, setList] = useState(null)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    const r = await request(socket, 'admin:replays')
+    if (r.ok) { setList(r.replays); setError(null) } else setError(r.error)
+  }, [socket])
+  useEffect(() => { load() }, [load])
+
+  async function remove(r) {
+    if (!window.confirm(`Delete the replay of ${r.players?.A ?? '—'} & ${r.players?.B ?? '—'} (${new Date(r.startedAt).toLocaleString()})?`)) return
+    const res = await request(socket, 'admin:deleteReplay', { id: r.id })
+    if (!res.ok) setError(res.error)
+    load()
+  }
+
+  return (
+    <>
+      {error && <p className="error">{error}</p>}
+      {list === null && !error && <p className="faint">Fetching the archive…</p>}
+      {list?.length === 0 && <p className="faint">No recorded games yet. Games that last more than three minutes appear here.</p>}
+      {list?.map((r) => (
+        <div key={r.id} className="admin-row">
+          <div>
+            <strong>{r.players?.A ?? '—'} & {r.players?.B ?? '—'}</strong> · {clockText(r.durationMs)}
+            {r.finished && <span className="replay-tag">finished</span>}
+            {r.recording && <span className="replay-tag live">being played</span>}
+            <div className="faint small">
+              {new Date(r.startedAt).toLocaleString()} · {levelsText(r)} · cell {r.code}
+              {!r.ended && !r.recording && ' · cut short by a server restart'}
+            </div>
+          </div>
+          <div className="admin-actions">
+            <button className="btn small" disabled={!r.chunks} onClick={() => onOpen(r)}>Watch</button>
+            {!r.recording && <button className="btn small ghost" onClick={() => remove(r)} aria-label="Delete replay">Delete</button>}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
 export default function Admin({ socket, watch, setWatch, onClose, makeSubscribe }) {
+  const [tab, setTab] = useState('live') // 'live' | 'replays'
+  const [replay, setReplay] = useState(null)
   const [list, setList] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (watch) return
+    if (watch || tab !== 'live') return
     let alive = true
     const load = async () => {
       const r = await request(socket, 'admin:list')
@@ -21,12 +72,14 @@ export default function Admin({ socket, watch, setWatch, onClose, makeSubscribe 
     load()
     const t = setInterval(load, 3000)
     return () => { alive = false; clearInterval(t) }
-  }, [socket, watch])
+  }, [socket, watch, tab])
 
   async function stop() {
     await request(socket, 'admin:unwatch')
     setWatch(null)
   }
+
+  if (replay) return <ReplayPlayer meta={replay} onClose={() => setReplay(null)} />
 
   if (watch) {
     return (
@@ -43,19 +96,27 @@ export default function Admin({ socket, watch, setWatch, onClose, makeSubscribe 
   return (
     <div className="center-screen">
       <h1 className="title small-title">The King’s Window</h1>
-      <p className="faint">Watch any game in progress. Nobody will know.</p>
+      <div className="admin-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'live'} className={`btn small ${tab === 'live' ? '' : 'ghost'}`} onClick={() => setTab('live')}>Live games</button>
+        <button role="tab" aria-selected={tab === 'replays'} className={`btn small ${tab === 'replays' ? '' : 'ghost'}`} onClick={() => setTab('replays')}>Replays</button>
+      </div>
+      <p className="faint">{tab === 'live' ? 'Watch any game in progress. Nobody will know.' : 'Watch past games back. Nobody will know.'}</p>
       <div className="panel wide">
-        {error && <p className="error">{error}</p>}
-        {list.length === 0 && <p className="faint">No games right now.</p>}
-        {list.map((g) => (
-          <div key={g.code} className="admin-row">
-            <div>
-              <strong>{g.code}</strong> · {g.A ?? '—'}{!g.online.A && ' (away)'} & {g.B ?? '—'}{g.B && !g.online.B && ' (away)'}
-              <div className="faint small">{PHASE[g.phase] ?? g.phase} · Level {g.level} · started {new Date(g.createdAt).toLocaleTimeString()}</div>
-            </div>
-            <button className="btn small" onClick={() => request(socket, 'admin:watch', { code: g.code })}>Watch</button>
-          </div>
-        ))}
+        {tab === 'replays' ? <Replays socket={socket} onOpen={setReplay} /> : (
+          <>
+            {error && <p className="error">{error}</p>}
+            {list.length === 0 && <p className="faint">No games right now.</p>}
+            {list.map((g) => (
+              <div key={g.code} className="admin-row">
+                <div>
+                  <strong>{g.code}</strong> · {g.A ?? '—'}{!g.online.A && ' (away)'} & {g.B ?? '—'}{g.B && !g.online.B && ' (away)'}
+                  <div className="faint small">{PHASE[g.phase] ?? g.phase} · Level {g.level} · started {new Date(g.createdAt).toLocaleTimeString()}</div>
+                </div>
+                <button className="btn small" onClick={() => request(socket, 'admin:watch', { code: g.code })}>Watch</button>
+              </div>
+            ))}
+          </>
+        )}
       </div>
       <button className="btn small ghost" onClick={onClose}>Back</button>
     </div>

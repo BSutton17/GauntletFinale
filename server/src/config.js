@@ -23,4 +23,6 @@ export const config = {
   // browser unlocks nothing.
   devMode: env.GAME_DEV_MODE === '1',
   devLogin: !isProduction && env.AUTH_DEV_LOGIN === '1',
+  // Recorded games are kept until they take up this much of the database, then the oldest go first.
+  replayMaxMb: Number(env.REPLAY_MAX_MB) || 300,
 }

@@ -7,7 +7,7 @@ import { levelComponent } from '../levels/index.js'
 import RotateOverlay from '../components/RotateOverlay.jsx'
 import SaveQuit from '../components/SaveQuit.jsx'
 
-function Pane({ room, role, players, view, emit, makeSubscribe, spectator, socket }) {
+function Pane({ room, role, players, view, emit, makeSubscribe, spectator, socket, replayQuery }) {
   const Component = levelComponent(room.level)
   const ctx = useMemo(() => ({
     role,
@@ -16,11 +16,11 @@ function Pane({ room, role, players, view, emit, makeSubscribe, spectator, socke
     spectator,
     send: (msg) => (spectator ? Promise.resolve({ ok: false }) : emit('level:action', msg)),
     // Read-only requests (e.g. piece pictures); the admin asks on behalf of the role it's looking at.
-    query: (msg) => (spectator ? request(socket, 'admin:levelQuery', { code: room.code, role, msg }) : emit('level:query', msg)),
+    query: (msg) => (replayQuery ? replayQuery(role, msg) : spectator ? request(socket, 'admin:levelQuery', { code: room.code, role, msg }) : emit('level:query', msg)),
     subscribe: makeSubscribe(spectator ? role : null),
     // leave the game entirely (the host leaving closes the cell for both)
     leave: () => (spectator ? undefined : emit('room:leave')),
-  }), [role, players, room.dev, room.code, spectator, emit, makeSubscribe, socket])
+  }), [role, players, room.dev, room.code, spectator, emit, makeSubscribe, socket, replayQuery])
   return (
     <LevelContext.Provider value={ctx}>
       <Component view={view} level={room.level} />
@@ -28,7 +28,7 @@ function Pane({ room, role, players, view, emit, makeSubscribe, spectator, socke
   )
 }
 
-export default function LevelScreen({ room, emit, makeSubscribe, spectator, socket, isAdmin = false }) {
+export default function LevelScreen({ room, emit, makeSubscribe, spectator, socket, isAdmin = false, replayQuery = null }) {
   const portrait = usePortraitTouch()
   const needsLandscape = LEVELS[room.level]?.orientation === 'landscape'
   // Which side of the puzzle each player is on: their seat, unless the admin has switched sides.
@@ -41,7 +41,7 @@ export default function LevelScreen({ room, emit, makeSubscribe, spectator, sock
           <div key={role} className="spectate-pane">
             <div className="spectate-label">Player {role === 'A' ? 1 : 2}{room.swapped ? '’s side' : ''}: {players[role]?.name}</div>
             <div className="spectate-body">
-              <Pane room={room} role={role} players={players} view={room.levelViews?.[role]} emit={emit} makeSubscribe={makeSubscribe} spectator socket={socket} />
+              <Pane room={room} role={role} players={players} view={room.levelViews?.[role]} emit={emit} makeSubscribe={makeSubscribe} spectator socket={socket} replayQuery={replayQuery} />
             </div>
           </div>
         ))}

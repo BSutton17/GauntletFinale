@@ -51,6 +51,26 @@ export function createMemoryStore() {
     async putSession(hash, s) { sessions.set(hash, { ...s }) },
     async getSession(hash) { return sessions.get(hash) ?? null },
     async deleteSession(hash) { sessions.delete(hash) },
+    ...memoryReplays(),
+  }
+}
+
+// Recorded games for the King's Window (see replays/recorder.js): a small summary per game plus its timeline in
+// compressed chunks, kept apart so the list never loads the (large) chunks.
+function memoryReplays() {
+  const metas = new Map()
+  const chunks = new Map() // `${id}:${i}` -> Buffer
+  return {
+    async saveReplay(meta) { metas.set(meta.id, { ...meta }) },
+    async putReplayChunk(id, i, data) { chunks.set(`${id}:${i}`, data) },
+    async listReplays() { return [...metas.values()].sort((a, b) => b.startedAt - a.startedAt) },
+    async getReplay(id) { return metas.get(id) ?? null },
+    async getReplayChunk(id, i) { return chunks.get(`${id}:${i}`) ?? null },
+    async deleteReplay(id) {
+      const m = metas.get(id)
+      metas.delete(id)
+      for (let i = 0; i < (m?.chunks ?? 0); i++) chunks.delete(`${id}:${i}`)
+    },
   }
 }
 
@@ -82,8 +102,16 @@ export async function createMongoStore(uri, dbName) {
   const users = db.collection('users')
   const sessions = db.collection('sessions')
   await sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+  const replays = db.collection('replays')
+  const replayChunks = db.collection('replay_chunks')
+  await replayChunks.createIndex({ replayId: 1 })
 
   const fromDoc = (d) => (d ? { id: d._id, ...d, _id: undefined } : null)
+  const replayFromDoc = (d) => {
+    if (!d) return null
+    const { _id, ...rest } = d
+    return { ...rest, id: _id, startedAt: new Date(d.startedAt).getTime(), updatedAt: new Date(d.updatedAt).getTime() }
+  }
 
   return {
     kind: 'mongo',
@@ -119,6 +147,25 @@ export async function createMongoStore(uri, dbName) {
     async putSession(hash, s) { await sessions.replaceOne({ _id: hash }, s, { upsert: true }) },
     async getSession(hash) { return sessions.findOne({ _id: hash }) },
     async deleteSession(hash) { await sessions.deleteOne({ _id: hash }) },
+
+    async saveReplay({ id, ...meta }) {
+      await replays.replaceOne({ _id: id }, { ...meta, startedAt: new Date(meta.startedAt), updatedAt: new Date(meta.updatedAt) }, { upsert: true })
+    },
+    async putReplayChunk(id, i, data) {
+      await replayChunks.replaceOne({ _id: `${id}:${i}` }, { replayId: id, i, data }, { upsert: true })
+    },
+    async listReplays() { return (await replays.find({}).sort({ startedAt: -1 }).toArray()).map(replayFromDoc) },
+    async getReplay(id) { return replayFromDoc(await replays.findOne({ _id: String(id) })) },
+    async getReplayChunk(id, i) {
+      const d = await replayChunks.findOne({ _id: `${id}:${i}` })
+      if (!d) return null
+      const bin = d.data
+      return Buffer.isBuffer(bin) ? bin : Buffer.from(bin.buffer.subarray(0, bin.position ?? bin.buffer.length))
+    },
+    async deleteReplay(id) {
+      await replayChunks.deleteMany({ replayId: String(id) })
+      await replays.deleteOne({ _id: String(id) })
+    },
   }
 }
 

@@ -8,6 +8,8 @@ import { config } from './config.js'
 import { initStore, getStore } from './db/store.js'
 import { createAuthRouter, userFromToken, isAdmin, publicUser } from './auth/routes.js'
 import { createRoomManager, GameError } from './rooms/roomManager.js'
+import { createRecorder } from './replays/recorder.js'
+import { createReplayRouter } from './replays/routes.js'
 import { PRONOUN_OPTIONS, cleanName, LEVEL_COUNT } from '../../shared/levels.js'
 
 await initStore()
@@ -18,6 +20,7 @@ app.use(cors({ origin: config.clientOrigins }))
 app.get('/', (_req, res) => res.type('text').send('The Gauntlet Finale server is running.'))
 app.get('/health', (_req, res) => res.json({ ok: true }))
 app.use('/auth', createAuthRouter())
+app.use('/admin/replays', createReplayRouter())
 
 const server = http.createServer(app)
 const io = new Server(server, { cors: { origin: config.clientOrigins } })
@@ -25,8 +28,12 @@ const io = new Server(server, { cors: { origin: config.clientOrigins } })
 const seatChannel = (code, role) => `seat:${code}:${role}`
 const watchChannel = (code) => `watch:${code}`
 
+// Every game is recorded; ones that get going and last over three minutes are kept for the King's Window.
+const recorder = createRecorder({ getStore, maxBytes: config.replayMaxMb * 1024 * 1024 })
+
 const rooms = createRoomManager({
   devMode: config.devMode,
+  recorder,
   transport: {
     toSeat: (code, role, event, data) => io.to(seatChannel(code, role)).emit(event, data),
     toWatchers: (code, event, data) => io.to(watchChannel(code)).emit(event, data),
@@ -167,6 +174,17 @@ io.on('connection', (socket) => {
   on('admin:levelQuery', ({ code, role, msg } = {}) => {
     if (!admin) throw new GameError('Not allowed.')
     return rooms.spectatorQuery(String(code ?? ''), role, msg ?? {})
+  })
+  // Recorded games (the chunks themselves come over HTTP, see replays/routes.js).
+  on('admin:replays', async () => {
+    if (!admin) throw new GameError('Not allowed.')
+    const list = await getStore().listReplays()
+    return { replays: list.map(r => ({ ...r, recording: recorder.isLive(r.id) })) }
+  })
+  on('admin:deleteReplay', async ({ id } = {}) => {
+    if (!admin) throw new GameError('Not allowed.')
+    if (recorder.isLive(String(id))) throw new GameError('That game is still being played.')
+    await getStore().deleteReplay(String(id ?? ''))
   })
   on('admin:unwatch', () => {
     for (const ch of socket.rooms) if (ch.startsWith('watch:')) socket.leave(ch)

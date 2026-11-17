@@ -14,6 +14,9 @@
 //   transport.toSeat(code, role, event, data)
 //   transport.toWatchers(code, event, data)      (silent admin spectators)
 //   transport.hasWatchers(code) -> boolean
+//
+// An optional `recorder` (replays/recorder.js) gets everything a spectator would, so the admin can watch old
+// games back later.
 
 import { LEVEL_COUNT, PRONOUN_OPTIONS, cleanName } from '../../../shared/levels.js'
 import { STORIES, storyBeforeLevel } from '../story/script.js'
@@ -27,7 +30,7 @@ const ABANDON_MS = 15 * 60 * 1000
 
 export class GameError extends Error {}
 
-export function createRoomManager({ transport, devMode = false, recordProgress = async () => {}, getHostFurthest = async () => 1, rngFactory = cryptoRng, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+export function createRoomManager({ transport, devMode = false, recordProgress = async () => {}, getHostFurthest = async () => 1, rngFactory = cryptoRng, recorder = null, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
   const rooms = new Map()       // code -> room
   const userRoom = new Map()    // userId -> code
 
@@ -114,7 +117,12 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
     for (const role of ['A', 'B']) {
       if (room.seats[role]) transport.toSeat(room.code, role, 'room:state', snapshot(room, role))
     }
-    if (transport.hasWatchers(room.code)) transport.toWatchers(room.code, 'room:state', snapshot(room, 'spectator'))
+    const watching = transport.hasWatchers(room.code)
+    if (watching || recorder) {
+      const snap = snapshot(room, 'spectator')
+      if (watching) transport.toWatchers(room.code, 'room:state', snap)
+      recorder?.state(room.recId, snap)
+    }
   }
 
   // ── flow ─────────────────────────────────────────────────────────────────
@@ -148,6 +156,13 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
     room.phase = 'level'
     // Levels that run on their own clock (the maze's timer) start it here, with the same api actions get.
     mod.start?.(room.levelState, levelApi(room))
+    // Data the replay can't ask for later (Level 3's piece pictures).
+    if (recorder && mod.replayAssets) {
+      const { recId, level, levelState } = room
+      Promise.resolve().then(() => mod.replayAssets(levelState))
+        .then((a) => recorder.assets(recId, level, a))
+        .catch((e) => console.error(`[replays] level ${level} assets: ${e.message}`))
+    }
   }
 
   function levelApi(room) {
@@ -161,6 +176,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         if (!live()) return
         transport.toSeat(room.code, sideOf(room, role), 'level:stream', { event, data })
         if (transport.hasWatchers(room.code)) transport.toWatchers(room.code, 'level:stream', { role, event, data })
+        recorder?.stream(room.recId, { role, event, data })
       },
       complete: (result = {}) => { if (live()) completeLevel(room, result) },
       // the players swap puzzle sides (the same switch the admin has); the caller then calls update()
@@ -201,6 +217,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
       transport.toSeat(room.code, role, 'room:closed', { code: room.code, reason })
     }
     if (transport.hasWatchers(room.code)) transport.toWatchers(room.code, 'room:closed', { code: room.code, reason })
+    recorder?.end(room.recId, reason)
   }
 
   function requireRoom(userId) {
@@ -234,6 +251,7 @@ export function createRoomManager({ transport, devMode = false, recordProgress =
         choice: null,
         swapped: false,
       }
+      room.recId = recorder?.begin(code, room.createdAt) ?? null
       rooms.set(code, room)
       userRoom.set(user.id, code)
       return { code, role: 'A' }

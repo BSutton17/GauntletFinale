@@ -65,6 +65,11 @@ export default {
   },
 
   // Pictures, on request: your own loose pieces and anything already in the mold.
+  // Every piece picture, for the King's Window replays (a replay can't run the query above).
+  async replayAssets(state) {
+    return { images: Object.fromEntries(await state.images) }
+  },
+
   async query(state, role, msg) {
     if (msg?.type !== 'images' || !Array.isArray(msg.ids)) return {}
     const images = await state.images

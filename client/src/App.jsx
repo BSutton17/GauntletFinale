@@ -1,11 +1,12 @@
 // The whole app is driven by the server's room state; there are no URLs per level to guess.
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { api, tokenStore } from './lib/api.js'
 import { connectSocket, request } from './lib/socket.js'
 import Login from './screens/Login.jsx'
 import Home from './screens/Home.jsx'
 import RoomView from './screens/RoomView.jsx'
-import Admin from './screens/Admin.jsx'
+// The King's Window is only downloaded by the admin, never shipped to players with the rest of the game.
+const Admin = lazy(() => import('./screens/Admin.jsx'))
 import Dungeon from './components/Dungeon.jsx'
 
 export default function App() {
@@ -87,7 +88,11 @@ export default function App() {
   if (!token) screen = <Login onToken={(t, u) => { tokenStore.set(t); setToken(t); setUser(u) }} notice={notice} />
   else if (!user || !socket) screen = <div className="center-screen"><p className="faint">{notice ?? 'Unlocking the dungeon…'}</p></div>
   else if (mode === 'admin' && user.isAdmin) {
-    screen = <Admin socket={socket} watch={watch} setWatch={setWatch} onClose={() => setMode('home')} makeSubscribe={makeSubscribe} />
+    screen = (
+      <Suspense fallback={<div className="center-screen"><p className="faint">Opening the window…</p></div>}>
+        <Admin socket={socket} watch={watch} setWatch={setWatch} onClose={() => setMode('home')} makeSubscribe={makeSubscribe} />
+      </Suspense>
+    )
   } else if (room) {
     screen = <RoomView socket={socket} room={room} user={user} makeSubscribe={makeSubscribe} />
   } else {

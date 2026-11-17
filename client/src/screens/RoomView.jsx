@@ -1,4 +1,5 @@
-// Picks the screen for the room's current phase. Also used, read-only, by the admin spectator.
+// Picks the screen for the room's current phase. Also used, read-only, by the admin spectator and replays
+// (a replay answers level queries itself with `replayQuery`).
 import { useCallback } from 'react'
 import { request } from '../lib/socket.js'
 import Lobby from './Lobby.jsx'
@@ -8,7 +9,7 @@ import LevelScreen from './LevelScreen.jsx'
 import Choice from './Choice.jsx'
 import Credits from './Credits.jsx'
 
-export default function RoomView({ socket, room, user, makeSubscribe, spectator = false }) {
+export default function RoomView({ socket, room, user, makeSubscribe, spectator = false, replayQuery = null }) {
   const isHost = !spectator && room.you?.isHost
   const emit = useCallback((event, payload) => (spectator ? Promise.resolve({ ok: false }) : request(socket, event, payload)), [socket, spectator])
 
@@ -25,7 +26,7 @@ export default function RoomView({ socket, room, user, makeSubscribe, spectator 
       screen = <LevelCard level={room.level} />
       break
     case 'level':
-      screen = <LevelScreen room={room} emit={emit} makeSubscribe={makeSubscribe} spectator={spectator} socket={socket} isAdmin={!spectator && !!user?.isAdmin} />
+      screen = <LevelScreen room={room} emit={emit} makeSubscribe={makeSubscribe} spectator={spectator} socket={socket} isAdmin={!spectator && !!user?.isAdmin} replayQuery={replayQuery} />
       break
     case 'choice':
       screen = <Choice room={room} emit={emit} spectator={spectator} />

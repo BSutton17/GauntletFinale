@@ -39,4 +39,6 @@ export const api = {
   devLogin: (name) => call('/auth/dev-login', { method: 'POST', body: { name } }),
   me: (token) => call('/auth/me', { token }),
   logout: (token) => call('/auth/logout', { method: 'POST', token }).catch(() => {}),
+  // Admin only: one chunk of a recorded game's timeline (an array of [t, type, data] entries).
+  replayChunk: (id, i) => call(`/admin/replays/${encodeURIComponent(id)}/${i}`, { token: tokenStore.get() }),
 }

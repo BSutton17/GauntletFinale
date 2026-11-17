@@ -309,6 +309,20 @@ input:focus, select:focus { outline: 2px solid var(--gold-dim); border-color: va
 /* ── admin ────────────────────────────────────────────────────────────── */
 .admin-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--stone-3); }
 .admin-row:last-child { border-bottom: 0; }
+.admin-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.admin-tabs { display: flex; gap: 8px; justify-content: center; }
+.replay-tag { margin-left: 8px; padding: 1px 8px; border-radius: 99px; font-size: .75em; border: 1px solid var(--gold-dim); color: var(--gold); }
+.replay-tag.live { border-color: var(--ember); color: var(--ember); }
+.replay-controls { flex-basis: 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.replay-controls select { padding: 6px 8px; min-height: 36px; width: auto; }
+.replay-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.replay-seek { flex: 1 1 200px; min-width: 120px; accent-color: var(--gold); }
+.replay-skip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--text-faint); }
+.replay-skip input { width: auto; }
+.spectate:has(.replay-bar) .phase,
+.spectate:has(.replay-bar) .center-screen,
+.spectate:has(.replay-bar) .story-screen,
+.spectate:has(.replay-bar) .spectate-split { min-height: calc(100dvh - 100px); }
 .spectate { min-height: 100dvh; display: flex; flex-direction: column; }
 .spectate-bar {
   position: sticky; top: 0; z-index: 60;
